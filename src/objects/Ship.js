@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import fighterMtl from '../assets/Fighter_02_Obj/Fighter_02.mtl?url';
+import fighterObj from '../assets/Fighter_02_Obj/Fighter_02.obj?url';
 
 export class Ship {
     constructor(scene, lasers) {
@@ -10,7 +12,8 @@ export class Ship {
 
         // Load the OBJ model with MTL materials, then make them emissive
         const mtlLoader = new MTLLoader();
-        mtlLoader.load('/src/assets/Fighter_02_Obj/Fighter_02.mtl', (materials) => {
+        mtlLoader.setResourcePath('/src/assets/Fighter_02_Obj/');
+        mtlLoader.load(fighterMtl, (materials) => {
             materials.preload();
 
             // Make all materials emissive (glow)
@@ -22,7 +25,7 @@ export class Ship {
 
             const objLoader = new OBJLoader();
             objLoader.setMaterials(materials);
-            objLoader.load('/src/assets/Fighter_02_Obj/Fighter_02.obj', (object) => {
+            objLoader.load(fighterObj, (object) => {
                 // Scale and rotate the model to fit the game
                 object.scale.set(0.3, 0.3, 0.3);
                 object.rotation.y = Math.PI; // Rotate to face forward
