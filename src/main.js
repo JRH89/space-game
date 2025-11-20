@@ -613,9 +613,39 @@ function updatePowerUpUI() {
     }
 }
 
+function initGame() {
+    // Show intro video first, hide menu and in-game UI
+    if (introContainer) introContainer.style.display = 'flex';
+    if (mainMenu) mainMenu.style.display = 'none';
+    if (uiContainer) uiContainer.style.display = 'none';
+
+    // When video finishes, go to main menu
+    if (introVideo) {
+        introVideo.onended = () => {
+            if (introContainer) introContainer.style.display = 'none';
+            if (mainMenu) mainMenu.style.display = 'flex';
+        };
+    }
+
+    // Skip button: same as video end
+    const skipIntroBtn = document.getElementById('skip-intro-btn');
+    if (skipIntroBtn) {
+        skipIntroBtn.style.display = 'block';
+        skipIntroBtn.addEventListener('click', () => {
+            if (introVideo) {
+                introVideo.pause();
+                introVideo.currentTime = 0;
+            }
+            if (introContainer) introContainer.style.display = 'none';
+            if (mainMenu) mainMenu.style.display = 'flex';
+        });
+    }
+
+    gameStarted = false;
+}
+
 function startGame() {
     mainMenu.style.display = 'none';
-    introContainer.style.display = 'none';
     uiContainer.style.display = 'block';
     gameStarted = true;
     restartGame(); // Starts fresh
@@ -688,4 +718,6 @@ function quitToMenu() {
 
 if (quitBtn) quitBtn.addEventListener('click', quitToMenu);
 
+// Start with intro video flow, then run the game loop
+initGame();
 animate();
