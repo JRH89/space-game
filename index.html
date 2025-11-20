@@ -10,7 +10,35 @@
 </head>
 
 <body>
-    <div id="ui-container">
+    <div id="intro-container">
+        <video id="intro-video" playsinline muted>
+            <source src="./src/assets/videos/intro.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <div id="main-menu" style="display: none;">
+        <h1>SPACE SHOOTER</h1>
+        <button id="start-btn">START</button>
+        <button id="about-btn">ABOUT</button>
+        <button id="credits-btn">CREDITS</button>
+        <button id="exit-btn">EXIT</button>
+    </div>
+
+    <div id="about-screen" class="menu-screen" style="display: none;">
+        <h1>ABOUT</h1>
+        <p>A space shooter game built with Three.js.</p>
+        <p>Tech Stack: Three.js, Vanilla JS, CSS.</p>
+        <button class="back-btn">BACK</button>
+    </div>
+
+    <div id="credits-screen" class="menu-screen" style="display: none;">
+        <h1>CREDITS</h1>
+        <p>Spaceship Model: Free3D</p>
+        <p>Textures: Solar System Scope</p>
+        <button class="back-btn">BACK</button>
+    </div>
+
+    <div id="ui-container" style="display: none;">
         <div id="score">Score: 0</div>
         <div id="level">Level: 1</div>
         <div id="lives-container">
@@ -32,6 +60,7 @@
             <div class="inner">
                 <h1>PAUSED</h1>
                 <button id="resume-btn">Resume</button>
+                <button id="quit-btn">Quit to Menu</button>
             </div>
         </div>
 
