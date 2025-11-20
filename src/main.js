@@ -613,32 +613,6 @@ function updatePowerUpUI() {
     }
 }
 
-// --- Intro & Menu Logic ---
-
-function initGame() {
-    // Start video
-    introVideo.play().catch(e => {
-        console.log("Autoplay blocked, waiting for interaction", e);
-        // If autoplay blocked, maybe show a "Click to Start" overlay or just show menu?
-        // For now, assume it works or user interacts.
-        // If it fails, we could fallback to menu.
-        showMenu();
-    });
-
-    introVideo.onended = () => {
-        showMenu();
-    };
-}
-
-function showMenu() {
-    introContainer.style.display = 'none'; // Hide video container (or keep it as bg?)
-    // User said "then it should show a menu", implying video is done.
-    // "Exit well will just replay the intro video"
-    mainMenu.style.display = 'flex';
-    uiContainer.style.display = 'none';
-    isPaused = true;
-}
-
 function startGame() {
     mainMenu.style.display = 'none';
     introContainer.style.display = 'none';
@@ -673,12 +647,10 @@ function showCredits() {
 }
 
 function exitGame() {
-    // Replay intro
-    mainMenu.style.display = 'none';
-    introContainer.style.display = 'flex';
-    introVideo.currentTime = 0;
-    introVideo.play();
-    // Video onended will trigger showMenu again
+    // Just return to main menu
+    uiContainer.style.display = 'none';
+    mainMenu.style.display = 'flex';
+    isPaused = true;
 }
 
 // Event Listeners
@@ -705,14 +677,13 @@ refreshHighScoreUI();
 
 const quitBtn = document.getElementById('quit-btn');
 
-// Start the flow
-initGame();
-
 function quitToMenu() {
     isPaused = true;
     gameStarted = false; // Stop the game loop logic from running if we unpause accidentally
     if (pauseMenuEl) pauseMenuEl.style.display = 'none';
-    showMenu();
+
+    uiContainer.style.display = 'none';
+    mainMenu.style.display = 'flex';
 }
 
 if (quitBtn) quitBtn.addEventListener('click', quitToMenu);
