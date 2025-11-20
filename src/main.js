@@ -665,7 +665,18 @@ updateLives();
 updateHealth();
 updateLevel();
 
+const quitBtn = document.getElementById('quit-btn');
+
 // Start the flow
 initGame();
+
+function quitToMenu() {
+    isPaused = true;
+    gameStarted = false; // Stop the game loop logic from running if we unpause accidentally
+    if (pauseMenuEl) pauseMenuEl.style.display = 'none';
+    showMenu();
+}
+
+if (quitBtn) quitBtn.addEventListener('click', quitToMenu);
 
 animate();
