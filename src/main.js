@@ -63,13 +63,57 @@ const healthBarEl = document.getElementById('health-bar');
 let score = 0;
 let lives = 5;
 let health = 100;
+let level = 1;
 let isGameOver = false;
 let isPaused = false;
 let isInvincible = false;
 
+// Level thresholds
+const LEVEL_THRESHOLDS = {
+    2: 1000,
+    3: 2500,
+    4: 5000,
+    5: 10000
+};
+
 function updateScore(points) {
     score += points;
     if (scoreEl) scoreEl.innerText = `Score: ${score}`;
+    checkLevelUp();
+}
+
+function checkLevelUp() {
+    for (let nextLevel in LEVEL_THRESHOLDS) {
+        if (score >= LEVEL_THRESHOLDS[nextLevel] && level < nextLevel) {
+            level = parseInt(nextLevel);
+            updateLevel();
+            showLevelUpMessage();
+            break;
+        }
+    }
+}
+
+function updateLevel() {
+    const levelEl = document.getElementById('level');
+    if (levelEl) levelEl.innerText = `Level: ${level}`;
+}
+
+function showLevelUpMessage() {
+    const notification = document.createElement('div');
+    notification.style.position = 'fixed';
+    notification.style.top = '50%';
+    notification.style.left = '50%';
+    notification.style.transform = 'translate(-50%, -50%)';
+    notification.style.fontSize = '48px';
+    notification.style.color = '#00ffcc';
+    notification.style.fontFamily = 'Courier New, monospace';
+    notification.style.fontWeight = 'bold';
+    notification.style.textShadow = '0 0 20px #00ffcc';
+    notification.style.zIndex = '1000';
+    notification.style.pointerEvents = 'none';
+    notification.innerText = `LEVEL ${level}!`;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 2000);
 }
 
 function updateLives() {
@@ -119,11 +163,13 @@ function restartGame() {
     score = 0;
     lives = 5;
     health = 100;
+    level = 1;
     isInvincible = false;
 
     updateScore(0);
     updateLives();
     updateHealth();
+    updateLevel();
 
     if (gameOverEl) gameOverEl.style.display = 'none';
     if (pauseMenuEl) pauseMenuEl.style.display = 'none';
@@ -151,7 +197,7 @@ function restartGame() {
     }
 
     ship.mesh.position.set(0, 0, 0);
-    ship.mesh.visible = true; // Make ship visible again
+    ship.mesh.visible = true;
 }
 
 function togglePause() {
@@ -178,14 +224,26 @@ function animate() {
 
     if (isGameOver || isPaused) return;
 
-    ship.update();
-    meteors.update();
-    comets.update();
-    planets.update();
-    lasers.update();
-    explosions.update();
+    // Update game objects
     starfield.update();
-    aliens.update();
+
+    // Level 1+: Always spawn meteors and planets
+    meteors.update();
+    planets.update();
+
+    // Level 2+: Spawn aliens
+    if (level >= 2) {
+        aliens.update();
+    }
+
+    // Level 3+: Spawn comets
+    if (level >= 3) {
+        comets.update();
+    }
+
+    lasers.update();
+    ship.update();
+    explosions.update();
 
     applyGravity();
     checkCollisions();
@@ -398,5 +456,6 @@ function checkCollisions() {
 // Initialize UI
 updateLives();
 updateHealth();
+updateLevel();
 
 animate();

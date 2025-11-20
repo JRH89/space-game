@@ -34,6 +34,16 @@ canvas {
   font-weight: bold;
 }
 
+#level {
+  position: absolute;
+  top: 50px;
+  left: 20px;
+  color: #00ffcc;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 20px;
+  font-weight: bold;
+}
+
 #game-over,
 #pause-menu {
   position: absolute;
@@ -81,7 +91,7 @@ button:hover {
 
 #health-bar-container {
   position: absolute;
-  top: 60px;
+  top: 80px;
   left: 20px;
   width: 200px;
   height: 20px;
