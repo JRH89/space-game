@@ -7,6 +7,7 @@ import { Explosions } from './objects/Explosions.js';
 import { Aliens } from './objects/Aliens.js';
 import { Comets } from './objects/Comets.js';
 import { Planets } from './objects/Planets.js';
+import { PowerUps } from './objects/PowerUps.js';
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -47,6 +48,9 @@ const ship = new Ship(scene, lasers);
 // Aliens
 const aliens = new Aliens(scene, ship);
 
+// Power-ups
+const powerUps = new PowerUps(scene);
+
 camera.position.z = 5;
 camera.position.y = 2;
 camera.lookAt(0, 0, 0);
@@ -63,13 +67,59 @@ const healthBarEl = document.getElementById('health-bar');
 let score = 0;
 let lives = 5;
 let health = 100;
+let level = 1;
 let isGameOver = false;
 let isPaused = false;
 let isInvincible = false;
+let scoreMultiplier = 1;
+let activePowerUps = {};
+
+// Level thresholds
+const LEVEL_THRESHOLDS = {
+    2: 1000,
+    3: 2500,
+    4: 5000,
+    5: 10000
+};
 
 function updateScore(points) {
-    score += points;
+    score += points * scoreMultiplier;
     if (scoreEl) scoreEl.innerText = `Score: ${score}`;
+    checkLevelUp();
+}
+
+function checkLevelUp() {
+    for (let nextLevel in LEVEL_THRESHOLDS) {
+        if (score >= LEVEL_THRESHOLDS[nextLevel] && level < nextLevel) {
+            level = parseInt(nextLevel);
+            updateLevel();
+            showLevelUpMessage();
+            break;
+        }
+    }
+}
+
+function updateLevel() {
+    const levelEl = document.getElementById('level');
+    if (levelEl) levelEl.innerText = `Level: ${level}`;
+}
+
+function showLevelUpMessage() {
+    const notification = document.createElement('div');
+    notification.style.position = 'fixed';
+    notification.style.top = '50%';
+    notification.style.left = '50%';
+    notification.style.transform = 'translate(-50%, -50%)';
+    notification.style.fontSize = '48px';
+    notification.style.color = '#00ffcc';
+    notification.style.fontFamily = 'Courier New, monospace';
+    notification.style.fontWeight = 'bold';
+    notification.style.textShadow = '0 0 20px #00ffcc';
+    notification.style.zIndex = '1000';
+    notification.style.pointerEvents = 'none';
+    notification.innerText = `LEVEL ${level}!`;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 2000);
 }
 
 function updateLives() {
@@ -119,11 +169,17 @@ function restartGame() {
     score = 0;
     lives = 5;
     health = 100;
+    level = 1;
     isInvincible = false;
+    scoreMultiplier = 1;
+    activePowerUps = {};
+    ship.fireRate = 400; // Reset fire rate
 
     updateScore(0);
     updateLives();
     updateHealth();
+    updateLevel();
+    updatePowerUpUI();
 
     if (gameOverEl) gameOverEl.style.display = 'none';
     if (pauseMenuEl) pauseMenuEl.style.display = 'none';
@@ -149,9 +205,13 @@ function restartGame() {
         scene.remove(planets.planets[0]);
         planets.planets.shift();
     }
+    while (powerUps.powerups.length > 0) {
+        scene.remove(powerUps.powerups[0]);
+        powerUps.powerups.shift();
+    }
 
     ship.mesh.position.set(0, 0, 0);
-    ship.mesh.visible = true; // Make ship visible again
+    ship.mesh.visible = true;
 }
 
 function togglePause() {
@@ -164,6 +224,13 @@ function togglePause() {
 
 if (restartBtn) restartBtn.addEventListener('click', restartGame);
 if (resumeBtn) resumeBtn.addEventListener('click', togglePause);
+
+// Handle Enter key for pause
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Enter') {
+        togglePause();
+    }
+});
 
 // Handle window resize
 window.addEventListener('resize', () => {
@@ -178,14 +245,27 @@ function animate() {
 
     if (isGameOver || isPaused) return;
 
-    ship.update();
-    meteors.update();
-    comets.update();
-    planets.update();
-    lasers.update();
-    explosions.update();
+    // Update game objects
     starfield.update();
-    aliens.update();
+
+    // Level 1+: Always spawn meteors and planets
+    meteors.update();
+    planets.update();
+
+    // Level 2+: Spawn aliens
+    if (level >= 2) {
+        aliens.update();
+    }
+
+    // Level 3+: Spawn comets
+    if (level >= 3) {
+        comets.update();
+    }
+
+    lasers.update();
+    ship.update();
+    explosions.update();
+    powerUps.update();
 
     applyGravity();
     checkCollisions();
@@ -390,13 +470,118 @@ function checkCollisions() {
         // Reduced collision radius - gives more time to destroy moon before crash
         if (shipMesh.position.distanceTo(planetWorldPos) < 3.2) { // Smaller = more time
             explosions.explode(shipMesh.position);
-            gameOver();
+
+            // Reduce health massively
+            health = 0;
+            updateHealth();
+
+            shipMesh.visible = false;
+            setTimeout(() => loseLife(), 300);
         }
+    }
+
+    // Check Power-ups
+    for (let i = powerUps.powerups.length - 1; i >= 0; i--) {
+        const powerUp = powerUps.powerups[i];
+        const powerUpBox = new THREE.Box3().setFromObject(powerUp);
+
+        if (shipBox.intersectsBox(powerUpBox)) {
+            const type = powerUps.collect(powerUp);
+            activatePowerUp(type);
+        }
+    }
+}
+
+function activatePowerUp(type) {
+    const now = Date.now();
+
+    switch (type) {
+        case 'extraLife':
+            lives++;
+            updateLives();
+            break;
+
+        case 'health':
+            health = Math.min(100, health + 25);
+            updateHealth();
+            break;
+
+        case 'shield':
+            isInvincible = true;
+            activePowerUps['shield'] = now + 5000;
+            setTimeout(() => {
+                if (Date.now() >= activePowerUps['shield']) {
+                    isInvincible = false;
+                    delete activePowerUps['shield'];
+                    updatePowerUpUI();
+                }
+            }, 5000);
+            break;
+
+        case 'rapidFire':
+            ship.fireRate = 100;
+            activePowerUps['rapidFire'] = now + 5000;
+            setTimeout(() => {
+                if (Date.now() >= activePowerUps['rapidFire']) {
+                    ship.fireRate = 400;
+                    delete activePowerUps['rapidFire'];
+                    updatePowerUpUI();
+                }
+            }, 5000);
+            break;
+
+        case 'scoreMultiplier':
+            scoreMultiplier = 2;
+            activePowerUps['scoreMultiplier'] = now + 10000;
+            setTimeout(() => {
+                if (Date.now() >= activePowerUps['scoreMultiplier']) {
+                    scoreMultiplier = 1;
+                    delete activePowerUps['scoreMultiplier'];
+                    updatePowerUpUI();
+                }
+            }, 10000);
+            break;
+    }
+    updatePowerUpUI();
+}
+
+function updatePowerUpUI() {
+    const container = document.getElementById('powerups-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (activePowerUps['shield']) {
+        const div = document.createElement('div');
+        div.className = 'powerup-indicator';
+        div.style.color = '#0088ff';
+        div.style.borderColor = '#0088ff';
+        div.innerText = 'SHIELD ACTIVE';
+        container.appendChild(div);
+    }
+
+    if (activePowerUps['rapidFire']) {
+        const div = document.createElement('div');
+        div.className = 'powerup-indicator';
+        div.style.color = '#ff8800';
+        div.style.borderColor = '#ff8800';
+        div.innerText = 'RAPID FIRE';
+        container.appendChild(div);
+    }
+
+    if (activePowerUps['scoreMultiplier']) {
+        const div = document.createElement('div');
+        div.className = 'powerup-indicator';
+        div.style.color = '#ffdd00';
+        div.style.borderColor = '#ffdd00';
+        div.innerText = '2X SCORE';
+        container.appendChild(div);
     }
 }
 
 // Initialize UI
 updateLives();
 updateHealth();
+updateLevel();
 
 animate();

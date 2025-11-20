@@ -52,6 +52,9 @@ export class Ship {
             w: false, a: false, s: false, d: false
         };
 
+        this.lastShotTime = 0;
+        this.fireRate = 400; // Default fire rate (ms)
+
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
     }
@@ -72,8 +75,10 @@ export class Ship {
     }
 
     shoot() {
-        if (this.lasers) {
+        const now = Date.now();
+        if (this.lasers && now - this.lastShotTime > this.fireRate) {
             this.lasers.shoot(this.mesh.position);
+            this.lastShotTime = now;
         }
     }
 
