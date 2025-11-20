@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 
 export class Starfield {
-    constructor(scene, count = 3000) {
+    constructor(scene, count = 2000) {
         this.scene = scene;
         this.count = count;
         this.geometry = new THREE.BufferGeometry();
         this.material = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 0.1,
+            size: 0.075,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.7
         });
 
         this.init();

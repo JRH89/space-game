@@ -55,8 +55,76 @@ export class Ship {
         this.lastShotTime = 0;
         this.fireRate = 400; // Default fire rate (ms)
 
+        // Touch controls
+        this.touchActive = false;
+        this.touchStartPos = { x: 0, y: 0 };
+        this.touchCurrentPos = { x: 0, y: 0 };
+        this.joystickBase = null;
+        this.joystickKnob = null;
+
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
+
+        // Initialize touch controls after DOM is ready
+        this.initTouchControls();
+    }
+
+    initTouchControls() {
+        this.joystickBase = document.getElementById('joystick-base');
+        this.joystickKnob = document.getElementById('joystick-knob');
+
+        if (this.joystickBase) {
+            this.joystickBase.addEventListener('touchstart', (e) => this.onJoystickTouchStart(e));
+            this.joystickBase.addEventListener('touchmove', (e) => this.onJoystickTouchMove(e));
+            this.joystickBase.addEventListener('touchend', (e) => this.onJoystickTouchEnd(e));
+        }
+    }
+
+    onJoystickTouchStart(event) {
+        event.preventDefault();
+        this.touchActive = true;
+        const rect = this.joystickBase.getBoundingClientRect();
+        this.touchStartPos.x = rect.left + rect.width / 2;
+        this.touchStartPos.y = rect.top + rect.height / 2;
+    }
+
+    onJoystickTouchMove(event) {
+        if (!this.touchActive) return;
+        event.preventDefault();
+
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - this.touchStartPos.x;
+        const deltaY = touch.clientY - this.touchStartPos.y;
+
+        // Limit joystick movement to base radius
+        const maxDistance = 45; // Half of base width minus knob radius
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        if (distance > maxDistance) {
+            const angle = Math.atan2(deltaY, deltaX);
+            this.touchCurrentPos.x = Math.cos(angle) * maxDistance;
+            this.touchCurrentPos.y = Math.sin(angle) * maxDistance;
+        } else {
+            this.touchCurrentPos.x = deltaX;
+            this.touchCurrentPos.y = deltaY;
+        }
+
+        // Update knob position
+        if (this.joystickKnob) {
+            this.joystickKnob.style.transform = `translate(calc(-50% + ${this.touchCurrentPos.x}px), calc(-50% + ${this.touchCurrentPos.y}px))`;
+        }
+    }
+
+    onJoystickTouchEnd(event) {
+        event.preventDefault();
+        this.touchActive = false;
+        this.touchCurrentPos.x = 0;
+        this.touchCurrentPos.y = 0;
+
+        // Reset knob position
+        if (this.joystickKnob) {
+            this.joystickKnob.style.transform = 'translate(-50%, -50%)';
+        }
     }
 
     onKeyDown(event) {
@@ -86,7 +154,19 @@ export class Ship {
         // Idle animation
         this.mesh.rotation.z = 0; // Reset roll for banking effect later
 
-        // Movement Logic
+        // Touch controls movement
+        if (this.touchActive) {
+            const sensitivity = 0.03; // Reduced sensitivity for better control
+            this.mesh.position.x += this.touchCurrentPos.x * sensitivity;
+            this.mesh.position.y -= this.touchCurrentPos.y * sensitivity; // Invert Y for natural feel
+
+            // Banking effect for touch
+            if (Math.abs(this.touchCurrentPos.x) > 10) {
+                this.mesh.rotation.z = -this.touchCurrentPos.x * 0.01;
+            }
+        }
+
+        // Keyboard Movement Logic
         if (this.keys.ArrowUp || this.keys.w) this.mesh.position.y += this.speed;
         if (this.keys.ArrowDown || this.keys.s) this.mesh.position.y -= this.speed;
         if (this.keys.ArrowLeft || this.keys.a) {

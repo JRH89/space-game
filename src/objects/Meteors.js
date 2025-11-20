@@ -13,7 +13,7 @@ export class Meteors {
         const meteorTexture = textureLoader.load(meteorTextureUrl);
 
         // Reuse geometry and material for performance
-        this.geometry = new THREE.IcosahedronGeometry(1, 1);
+        this.geometry = new THREE.IcosahedronGeometry(1, 2);
         this.material = new THREE.MeshStandardMaterial({
             map: meteorTexture,
             roughness: 0.8,

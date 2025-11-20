@@ -14,7 +14,7 @@ export class Aliens {
             new THREE.SphereGeometry(0.5, 16, 16),
             new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.9, roughness: 0.1 })
         );
-        saucerBody.scale.y = 0.5;
+        saucerBody.scale.y = 1.25;
         this.geometry.add(saucerBody);
 
         const ring = new THREE.Mesh(

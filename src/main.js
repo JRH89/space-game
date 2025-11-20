@@ -650,6 +650,16 @@ function startGame() {
     gameStarted = true;
     restartGame(); // Starts fresh
 
+    // Show mobile controls on touch devices
+    const mobileControls = document.getElementById('mobile-controls');
+    if (mobileControls) {
+        // Check if device supports touch
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
+        if (isTouchDevice) {
+            mobileControls.style.display = 'block';
+        }
+    }
+
     // Initialize Google AdSense after UI is visible
     const adSlot = document.querySelector('#ad-container .adsbygoogle');
     if (window.adsbygoogle && adSlot) {
@@ -677,10 +687,17 @@ function showCredits() {
 }
 
 function exitGame() {
-    // Just return to main menu
+    // Replay intro video then return to main menu
     uiContainer.style.display = 'none';
-    mainMenu.style.display = 'flex';
     isPaused = true;
+    gameStarted = false;
+
+    // Show intro video
+    if (introContainer) introContainer.style.display = 'flex';
+    if (introVideo) {
+        introVideo.currentTime = 0;
+        introVideo.play();
+    }
 }
 
 // Event Listeners
@@ -717,6 +734,21 @@ function quitToMenu() {
 }
 
 if (quitBtn) quitBtn.addEventListener('click', quitToMenu);
+
+// Mobile shoot button
+const shootButton = document.getElementById('shoot-button');
+if (shootButton) {
+    shootButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        ship.shoot();
+    });
+
+    // Also support click for testing on desktop
+    shootButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        ship.shoot();
+    });
+}
 
 // Start with intro video flow, then run the game loop
 initGame();
