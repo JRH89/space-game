@@ -64,6 +64,8 @@ const resumeBtn = document.getElementById('resume-btn');
 const livesEl = document.getElementById('lives');
 const healthBarEl = document.getElementById('health-bar');
 const uiContainer = document.getElementById('ui-container');
+const highScoreMainEl = document.getElementById('high-score-main');
+const highScoreOverEl = document.getElementById('high-score-over');
 
 // Menu Elements
 const introContainer = document.getElementById('intro-container');
@@ -92,6 +94,11 @@ let gameStarted = false;
 
 // High score (localStorage)
 let highScore = parseInt(localStorage.getItem('highScore') || '0', 10);
+
+function refreshHighScoreUI() {
+    if (highScoreMainEl) highScoreMainEl.innerText = `High Score: ${highScore}`;
+    if (highScoreOverEl) highScoreOverEl.innerText = `High Score: ${highScore}`;
+}
 
 // Level thresholds
 const LEVEL_THRESHOLDS = {
@@ -184,6 +191,8 @@ function gameOver() {
         highScore = score;
         localStorage.setItem('highScore', String(highScore));
     }
+
+    refreshHighScoreUI();
 
     if (gameOverEl) gameOverEl.style.display = 'block';
 }
@@ -692,6 +701,7 @@ backBtns.forEach(btn => {
 updateLives();
 updateHealth();
 updateLevel();
+refreshHighScoreUI();
 
 const quitBtn = document.getElementById('quit-btn');
 

@@ -203,25 +203,25 @@ button:hover {
 
 #main-menu h1,
 .menu-screen h1 {
-  font-size: 48px;
-  margin-bottom: 40px;
-  text-shadow: 0 0 20px #00ffcc;
+  font-size: 32px;
+  margin-bottom: 24px;
+  text-shadow: 0 0 16px #00ffcc;
   color: #00ffcc;
 }
 
 .menu-screen p {
-  font-size: 24px;
-  margin-bottom: 20px;
-  max-width: 500px;
-  line-height: 1.5;
+  font-size: 20px;
+  margin-bottom: 10px;
+  max-width: 420px;
+  line-height: 1.4;
 }
 
 .menu-screen h2 {
-  font-size: 28px;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  font-size: 20px;
+  margin-top: 8px;
+  margin-bottom: 6px;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   color: #00ffcc;
 }
 
