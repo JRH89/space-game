@@ -3,6 +3,7 @@
 const introContainer = document.getElementById('intro-container');
 const introVideo = document.getElementById('intro-video');
 const mainMenu = document.getElementById('main-menu');
+const skipIntroBtn = document.getElementById('skip-intro-btn');
 
 function showMenu() {
   if (introContainer) introContainer.style.display = 'none';
@@ -22,8 +23,21 @@ function loadGameScript() {
 
 // Handle intro video flow
 if (introVideo) {
+  const hasWatchedIntro = localStorage.getItem('introWatched') === 'true';
+
+  // Always allow skipping if the button exists; we still track hasWatchedIntro for potential future use
+  if (skipIntroBtn) {
+    skipIntroBtn.style.display = 'block';
+    skipIntroBtn.addEventListener('click', () => {
+      showMenu();
+      loadGameScript();
+    });
+  }
+
   // If the video can play, wait for it to end, then show menu + load game
   introVideo.onended = () => {
+    // Remember that user has seen the intro at least once
+    localStorage.setItem('introWatched', 'true');
     showMenu();
     loadGameScript();
   };
