@@ -159,3 +159,81 @@ button:hover {
   transform: translateX(-50%);
   pointer-events: auto;
 }
+
+/* Intro Video */
+#intro-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#intro-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Main Menu */
+#main-menu,
+.menu-screen {
+  position: absolute;
+  inset: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1500;
+  color: white;
+  font-family: 'Courier New', Courier, monospace;
+  text-align: center;
+}
+
+#main-menu h1,
+.menu-screen h1 {
+  font-size: 48px;
+  margin-bottom: 40px;
+  text-shadow: 0 0 20px #00ffcc;
+  color: #00ffcc;
+}
+
+.menu-screen p {
+  font-size: 24px;
+  margin-bottom: 20px;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+#main-menu button,
+.menu-screen button {
+  padding: 15px 40px;
+  font-size: 24px;
+  margin: 10px;
+  width: 300px;
+  background: transparent;
+  border: 2px solid #00ffcc;
+  color: #00ffcc;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+#main-menu button:hover,
+.menu-screen button:hover {
+  background: #00ffcc;
+  color: black;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+  transform: scale(1.05);
+}

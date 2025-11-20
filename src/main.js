@@ -63,16 +63,30 @@ const pauseMenuEl = document.getElementById('pause-menu');
 const resumeBtn = document.getElementById('resume-btn');
 const livesEl = document.getElementById('lives');
 const healthBarEl = document.getElementById('health-bar');
+const uiContainer = document.getElementById('ui-container');
+
+// Menu Elements
+const introContainer = document.getElementById('intro-container');
+const introVideo = document.getElementById('intro-video');
+const mainMenu = document.getElementById('main-menu');
+const startBtn = document.getElementById('start-btn');
+const aboutBtn = document.getElementById('about-btn');
+const creditsBtn = document.getElementById('credits-btn');
+const exitBtn = document.getElementById('exit-btn');
+const aboutScreen = document.getElementById('about-screen');
+const creditsScreen = document.getElementById('credits-screen');
+const backBtns = document.querySelectorAll('.back-btn');
 
 let score = 0;
 let lives = 5;
 let health = 100;
 let level = 1;
 let isGameOver = false;
-let isPaused = false;
+let isPaused = true; // Start paused
 let isInvincible = false;
 let scoreMultiplier = 1;
 let activePowerUps = {};
+let gameStarted = false;
 
 // Level thresholds
 const LEVEL_THRESHOLDS = {
@@ -215,7 +229,7 @@ function restartGame() {
 }
 
 function togglePause() {
-    if (isGameOver) return;
+    if (isGameOver || !gameStarted) return;
     isPaused = !isPaused;
     if (pauseMenuEl) {
         pauseMenuEl.style.display = isPaused ? 'block' : 'none';
@@ -579,9 +593,79 @@ function updatePowerUpUI() {
     }
 }
 
+// --- Intro & Menu Logic ---
+
+function initGame() {
+    // Start video
+    introVideo.play().catch(e => {
+        console.log("Autoplay blocked, waiting for interaction", e);
+        // If autoplay blocked, maybe show a "Click to Start" overlay or just show menu?
+        // For now, assume it works or user interacts.
+        // If it fails, we could fallback to menu.
+        showMenu();
+    });
+
+    introVideo.onended = () => {
+        showMenu();
+    };
+}
+
+function showMenu() {
+    introContainer.style.display = 'none'; // Hide video container (or keep it as bg?)
+    // User said "then it should show a menu", implying video is done.
+    // "Exit well will just replay the intro video"
+    mainMenu.style.display = 'flex';
+    uiContainer.style.display = 'none';
+    isPaused = true;
+}
+
+function startGame() {
+    mainMenu.style.display = 'none';
+    introContainer.style.display = 'none';
+    uiContainer.style.display = 'block';
+    gameStarted = true;
+    restartGame(); // Starts fresh
+}
+
+function showAbout() {
+    mainMenu.style.display = 'none';
+    aboutScreen.style.display = 'flex';
+}
+
+function showCredits() {
+    mainMenu.style.display = 'none';
+    creditsScreen.style.display = 'flex';
+}
+
+function exitGame() {
+    // Replay intro
+    mainMenu.style.display = 'none';
+    introContainer.style.display = 'flex';
+    introVideo.currentTime = 0;
+    introVideo.play();
+    // Video onended will trigger showMenu again
+}
+
+// Event Listeners
+startBtn.addEventListener('click', startGame);
+aboutBtn.addEventListener('click', showAbout);
+creditsBtn.addEventListener('click', showCredits);
+exitBtn.addEventListener('click', exitGame);
+
+backBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        aboutScreen.style.display = 'none';
+        creditsScreen.style.display = 'none';
+        mainMenu.style.display = 'flex';
+    });
+});
+
 // Initialize UI
 updateLives();
 updateHealth();
 updateLevel();
+
+// Start the flow
+initGame();
 
 animate();
