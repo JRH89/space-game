@@ -57,14 +57,55 @@ const gameOverEl = document.getElementById('game-over');
 const restartBtn = document.getElementById('restart-btn');
 const pauseMenuEl = document.getElementById('pause-menu');
 const resumeBtn = document.getElementById('resume-btn');
+const livesEl = document.getElementById('lives');
+const healthBarEl = document.getElementById('health-bar');
 
 let score = 0;
+let lives = 5;
+let health = 100;
 let isGameOver = false;
 let isPaused = false;
+let isInvincible = false;
 
 function updateScore(points) {
     score += points;
     if (scoreEl) scoreEl.innerText = `Score: ${score}`;
+}
+
+function updateLives() {
+    if (!livesEl) return;
+    livesEl.innerHTML = '';
+    for (let i = 0; i < lives; i++) {
+        const lifeIcon = document.createElement('div');
+        lifeIcon.className = 'life-icon';
+        livesEl.appendChild(lifeIcon);
+    }
+}
+
+function updateHealth() {
+    if (!healthBarEl) return;
+    healthBarEl.style.width = `${health}%`;
+}
+
+function loseLife() {
+    lives--;
+    updateLives();
+
+    if (lives <= 0) {
+        gameOver();
+    } else {
+        // Respawn with invincibility
+        health = 100;
+        updateHealth();
+        ship.mesh.position.set(0, 0, 0);
+        ship.mesh.visible = true;
+
+        // Brief invincibility
+        isInvincible = true;
+        setTimeout(() => {
+            isInvincible = false;
+        }, 2000);
+    }
 }
 
 function gameOver() {
@@ -76,7 +117,14 @@ function restartGame() {
     isGameOver = false;
     isPaused = false;
     score = 0;
+    lives = 5;
+    health = 100;
+    isInvincible = false;
+
     updateScore(0);
+    updateLives();
+    updateHealth();
+
     if (gameOverEl) gameOverEl.style.display = 'none';
     if (pauseMenuEl) pauseMenuEl.style.display = 'none';
 
@@ -272,12 +320,19 @@ function checkCollisions() {
         const meteorBox = new THREE.Box3().setFromObject(meteor);
         meteorBox.expandByScalar(-0.3); // Tighten collision
 
-        if (shipBox.intersectsBox(meteorBox)) {
+        if (shipBox.intersectsBox(meteorBox) && !isInvincible) {
             explosions.explode(shipMesh.position);
-            shipMesh.visible = false; // Hide ship during explosion
             scene.remove(meteor);
             meteorList.splice(i, 1);
-            setTimeout(() => gameOver(), 300); // Delay to show explosion
+
+            // Reduce health
+            health -= 25;
+            updateHealth();
+
+            if (health <= 0) {
+                shipMesh.visible = false;
+                setTimeout(() => loseLife(), 300);
+            }
         }
     }
 
@@ -287,12 +342,19 @@ function checkCollisions() {
         const alienBox = new THREE.Box3().setFromObject(alien);
         alienBox.expandByScalar(-0.5); // Tighten collision
 
-        if (shipBox.intersectsBox(alienBox)) {
+        if (shipBox.intersectsBox(alienBox) && !isInvincible) {
             explosions.explode(shipMesh.position);
-            shipMesh.visible = false; // Hide ship during explosion
             scene.remove(alien);
             alienList.splice(i, 1);
-            setTimeout(() => gameOver(), 300); // Delay to show explosion
+
+            // Reduce health
+            health -= 30;
+            updateHealth();
+
+            if (health <= 0) {
+                shipMesh.visible = false;
+                setTimeout(() => loseLife(), 300);
+            }
         }
     }
 
@@ -302,12 +364,19 @@ function checkCollisions() {
         const cometBox = new THREE.Box3().setFromObject(comet);
         cometBox.expandByScalar(-0.3); // Tighten collision
 
-        if (shipBox.intersectsBox(cometBox)) {
+        if (shipBox.intersectsBox(cometBox) && !isInvincible) {
             explosions.explode(shipMesh.position);
-            shipMesh.visible = false; // Hide ship during explosion
             scene.remove(comet);
             cometList.splice(i, 1);
-            setTimeout(() => gameOver(), 300); // Delay to show explosion
+
+            // Reduce health
+            health -= 40;
+            updateHealth();
+
+            if (health <= 0) {
+                shipMesh.visible = false;
+                setTimeout(() => loseLife(), 300);
+            }
         }
     }
 
@@ -325,5 +394,9 @@ function checkCollisions() {
         }
     }
 }
+
+// Initialize UI
+updateLives();
+updateHealth();
 
 animate();
