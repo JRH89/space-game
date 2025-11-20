@@ -7,15 +7,23 @@ export class Planets {
         this.spawnRate = 0.002; // Rare
         this.speed = 0.05; // Slow moving background objects essentially
 
+        // Load textures
+        const textureLoader = new THREE.TextureLoader();
+        const planetTexture = textureLoader.load('/src/assets/textures/planet.jpg');
+        const moonTexture = textureLoader.load('/src/assets/textures/moon.jpg');
+
         this.planetGeometry = new THREE.SphereGeometry(4, 32, 32);
         this.planetMaterial = new THREE.MeshStandardMaterial({
-            color: 0x4444ff,
+            map: planetTexture,
             roughness: 0.8,
             metalness: 0.1
         });
 
         this.moonGeometry = new THREE.SphereGeometry(0.8, 16, 16);
-        this.moonMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+        this.moonMaterial = new THREE.MeshStandardMaterial({
+            map: moonTexture,
+            roughness: 0.7
+        });
     }
 
     spawnPlanet() {

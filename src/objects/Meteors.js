@@ -7,10 +7,14 @@ export class Meteors {
         this.spawnRate = 0.01; // Chance to spawn per frame
         this.speed = 0.2;
 
-        // Reuse geometry and material for performance (basic)
-        this.geometry = new THREE.IcosahedronGeometry(1, 0);
+        // Load texture
+        const textureLoader = new THREE.TextureLoader();
+        const meteorTexture = textureLoader.load('/src/assets/textures/meteor.jpg');
+
+        // Reuse geometry and material for performance
+        this.geometry = new THREE.IcosahedronGeometry(1, 1);
         this.material = new THREE.MeshStandardMaterial({
-            color: 0x888888,
+            map: meteorTexture,
             roughness: 0.8,
             flatShading: true
         });

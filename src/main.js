@@ -103,6 +103,7 @@ function restartGame() {
     }
 
     ship.mesh.position.set(0, 0, 0);
+    ship.mesh.visible = true; // Make ship visible again
 }
 
 function togglePause() {
@@ -179,6 +180,7 @@ function checkCollisions() {
         for (let j = meteorList.length - 1; j >= 0; j--) {
             const meteor = meteorList[j];
             const meteorBox = new THREE.Box3().setFromObject(meteor);
+            meteorBox.expandByScalar(-0.3); // Tighten collision
 
             if (laserBox.intersectsBox(meteorBox)) {
                 explosions.explode(meteor.position);
@@ -197,6 +199,7 @@ function checkCollisions() {
         for (let k = alienList.length - 1; k >= 0; k--) {
             const alien = alienList[k];
             const alienBox = new THREE.Box3().setFromObject(alien);
+            alienBox.expandByScalar(-0.4); // Tighten collision
 
             if (laserBox.intersectsBox(alienBox)) {
                 explosions.explode(alien.position);
@@ -267,12 +270,14 @@ function checkCollisions() {
     for (let i = meteorList.length - 1; i >= 0; i--) {
         const meteor = meteorList[i];
         const meteorBox = new THREE.Box3().setFromObject(meteor);
+        meteorBox.expandByScalar(-0.3); // Tighten collision
 
         if (shipBox.intersectsBox(meteorBox)) {
             explosions.explode(shipMesh.position);
-            gameOver();
+            shipMesh.visible = false; // Hide ship during explosion
             scene.remove(meteor);
             meteorList.splice(i, 1);
+            setTimeout(() => gameOver(), 300); // Delay to show explosion
         }
     }
 
@@ -280,12 +285,14 @@ function checkCollisions() {
     for (let i = alienList.length - 1; i >= 0; i--) {
         const alien = alienList[i];
         const alienBox = new THREE.Box3().setFromObject(alien);
+        alienBox.expandByScalar(-0.5); // Tighten collision
 
         if (shipBox.intersectsBox(alienBox)) {
             explosions.explode(shipMesh.position);
-            gameOver();
+            shipMesh.visible = false; // Hide ship during explosion
             scene.remove(alien);
             alienList.splice(i, 1);
+            setTimeout(() => gameOver(), 300); // Delay to show explosion
         }
     }
 
@@ -293,12 +300,14 @@ function checkCollisions() {
     for (let i = cometList.length - 1; i >= 0; i--) {
         const comet = cometList[i];
         const cometBox = new THREE.Box3().setFromObject(comet);
+        cometBox.expandByScalar(-0.3); // Tighten collision
 
         if (shipBox.intersectsBox(cometBox)) {
             explosions.explode(shipMesh.position);
-            gameOver();
+            shipMesh.visible = false; // Hide ship during explosion
             scene.remove(comet);
             cometList.splice(i, 1);
+            setTimeout(() => gameOver(), 300); // Delay to show explosion
         }
     }
 
@@ -309,8 +318,8 @@ function checkCollisions() {
         const planetWorldPos = new THREE.Vector3();
         planet.getWorldPosition(planetWorldPos);
 
-        // Simple distance check for planet collision (sphere vs box approx)
-        if (shipMesh.position.distanceTo(planetWorldPos) < 4) { // Radius 4
+        // Reduced collision radius - gives more time to destroy moon before crash
+        if (shipMesh.position.distanceTo(planetWorldPos) < 3.2) { // Smaller = more time
             explosions.explode(shipMesh.position);
             gameOver();
         }
