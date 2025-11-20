@@ -1,6 +1,6 @@
 # Space Game
 
-A fast-paced 3D arcade shooter built with web technologies and Three.js. Pilot a glowing starfighter through deep space, dodge meteors and comets, fight aliens, and surf the gravity wells of giant planets while chasing high scores and power‑ups.
+A fast-paced 3D arcade shooter built with Three.js. Pilot a glowing starfighter through deep space, dodge meteors and comets, fight aliens, and surf the gravity wells of giant planets while chasing high scores and power‑ups.
 
 <img src="public/cover.png" />
 
