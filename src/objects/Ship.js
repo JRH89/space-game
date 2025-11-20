@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 
 export class Ship {
     constructor(scene, lasers) {
@@ -6,24 +8,35 @@ export class Ship {
         this.lasers = lasers;
         this.mesh = new THREE.Group();
 
-        // Body
-        const geometry = new THREE.ConeGeometry(0.5, 2, 8);
-        const material = new THREE.MeshNormalMaterial(); // Use Normal material for now to see orientation
-        const body = new THREE.Mesh(geometry, material);
+        // Load the OBJ model with MTL materials, then make them emissive
+        const mtlLoader = new MTLLoader();
+        mtlLoader.load('/src/assets/Fighter_02_Obj/Fighter_02.mtl', (materials) => {
+            materials.preload();
 
-        // Rotate cone to point forward (negative Z)
-        body.rotation.x = -Math.PI / 2;
+            // Make all materials emissive (glow)
+            for (let materialName in materials.materials) {
+                const mat = materials.materials[materialName];
+                mat.emissive = mat.color.clone();
+                mat.emissiveIntensity = 0.1;
+            }
 
-        this.mesh.add(body);
+            const objLoader = new OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.load('/src/assets/Fighter_02_Obj/Fighter_02.obj', (object) => {
+                // Scale and rotate the model to fit the game
+                object.scale.set(0.3, 0.3, 0.3);
+                object.rotation.y = Math.PI; // Rotate to face forward
 
-        // Wings (optional simple addition)
-        const wingGeo = new THREE.BoxGeometry(2, 0.1, 0.5);
-        const wingMat = new THREE.MeshNormalMaterial();
-        const wings = new THREE.Mesh(wingGeo, wingMat);
-        wings.position.z = 0.5;
-        this.mesh.add(wings);
+                this.mesh.add(object);
+            });
+        });
 
         this.scene.add(this.mesh);
+
+        // Add a point light to brighten the ship
+        this.shipLight = new THREE.PointLight(0xffffff, 2, 10);
+        this.shipLight.position.set(0, 2, 2); // Above and in front of ship
+        this.mesh.add(this.shipLight);
 
         // Initial position
         this.mesh.position.set(0, 0, 0);
