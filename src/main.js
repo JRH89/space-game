@@ -625,6 +625,16 @@ function startGame() {
     uiContainer.style.display = 'block';
     gameStarted = true;
     restartGame(); // Starts fresh
+
+    // Initialize Google AdSense after UI is visible
+    const adSlot = document.querySelector('#ad-container .adsbygoogle');
+    if (window.adsbygoogle && adSlot) {
+        try {
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+        } catch (e) {
+            console.warn('Adsbygoogle push failed:', e);
+        }
+    }
 }
 
 function showAbout() {
