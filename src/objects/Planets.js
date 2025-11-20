@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import planetTextureUrl from '../assets/textures/planet.jpg';
+import moonTextureUrl from '../assets/textures/moon.jpg';
 
 export class Planets {
     constructor(scene) {
@@ -9,8 +11,8 @@ export class Planets {
 
         // Load textures
         const textureLoader = new THREE.TextureLoader();
-        const planetTexture = textureLoader.load('/src/assets/textures/planet.jpg');
-        const moonTexture = textureLoader.load('/src/assets/textures/moon.jpg');
+        const planetTexture = textureLoader.load(planetTextureUrl);
+        const moonTexture = textureLoader.load(moonTextureUrl);
 
         this.planetGeometry = new THREE.SphereGeometry(4, 32, 32);
         this.planetMaterial = new THREE.MeshStandardMaterial({

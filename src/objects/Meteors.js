@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import meteorTextureUrl from '../assets/textures/meteor.jpg';
 
 export class Meteors {
     constructor(scene) {
@@ -9,7 +10,7 @@ export class Meteors {
 
         // Load texture
         const textureLoader = new THREE.TextureLoader();
-        const meteorTexture = textureLoader.load('/src/assets/textures/meteor.jpg');
+        const meteorTexture = textureLoader.load(meteorTextureUrl);
 
         // Reuse geometry and material for performance
         this.geometry = new THREE.IcosahedronGeometry(1, 1);
