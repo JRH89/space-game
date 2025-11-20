@@ -4,7 +4,7 @@ export class Meteors {
     constructor(scene) {
         this.scene = scene;
         this.meteors = [];
-        this.spawnRate = 0.02; // Chance to spawn per frame
+        this.spawnRate = 0.01; // Chance to spawn per frame
         this.speed = 0.2;
 
         // Reuse geometry and material for performance (basic)

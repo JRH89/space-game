@@ -15,50 +15,61 @@ canvas {
   height: 100vh;
 }
 
-#ui {
+#ui-container {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  color: white;
-  font-family: 'Courier New', Courier, monospace;
 }
 
 #score {
   position: absolute;
   top: 20px;
   left: 20px;
+  color: white;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 24px;
   font-weight: bold;
 }
 
-#game-over {
+#game-over,
+#pause-menu {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
+  color: white;
+  font-family: 'Courier New', Courier, monospace;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 40px;
+  border: 2px solid white;
   pointer-events: auto;
-  /* Enable clicks on button */
 }
 
-#game-over h1 {
-  font-size: 48px;
-  color: red;
-  margin-bottom: 20px;
-}
-
-#restart-btn {
+button {
   padding: 10px 20px;
-  font-size: 24px;
+  font-size: 18px;
   cursor: pointer;
   background: white;
   border: none;
-  border-radius: 5px;
+  font-family: 'Courier New', Courier, monospace;
+  margin-top: 20px;
 }
 
-#restart-btn:hover {
+button:hover {
   background: #ccc;
+}
+
+#ad-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  pointer-events: auto;
+  z-index: 1000;
+  background: transparent;
 }

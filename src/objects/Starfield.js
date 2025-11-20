@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export class Starfield {
-    constructor(scene, count = 10000) {
+    constructor(scene, count = 5000) {
         this.scene = scene;
         this.count = count;
         this.geometry = new THREE.BufferGeometry();
