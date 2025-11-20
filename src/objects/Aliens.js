@@ -18,8 +18,8 @@ export class Aliens {
         this.geometry.add(saucerBody);
 
         const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(0.8, 0.1, 8, 16),
-            new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9, roughness: 0.1 })
+            new THREE.TorusGeometry(0.8, 0.15, 8, 16),
+            new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.9, roughness: 0.1 })
         );
         ring.rotation.x = Math.PI / 2;
         this.geometry.add(ring);
