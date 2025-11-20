@@ -12,14 +12,14 @@ export class Aliens {
         this.geometry = new THREE.Group();
         const saucerBody = new THREE.Mesh(
             new THREE.SphereGeometry(0.5, 16, 16),
-            new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.8, roughness: 0.2 })
+            new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.9, roughness: 0.1 })
         );
-        saucerBody.scale.y = 0.3;
+        saucerBody.scale.y = 0.5;
         this.geometry.add(saucerBody);
 
         const ring = new THREE.Mesh(
             new THREE.TorusGeometry(0.8, 0.1, 8, 16),
-            new THREE.MeshStandardMaterial({ color: 0x888888 })
+            new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9, roughness: 0.1 })
         );
         ring.rotation.x = Math.PI / 2;
         this.geometry.add(ring);
