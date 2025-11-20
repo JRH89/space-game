@@ -70,11 +70,13 @@ const introContainer = document.getElementById('intro-container');
 const introVideo = document.getElementById('intro-video');
 const mainMenu = document.getElementById('main-menu');
 const startBtn = document.getElementById('start-btn');
+const howToBtn = document.getElementById('howto-btn');
 const aboutBtn = document.getElementById('about-btn');
 const creditsBtn = document.getElementById('credits-btn');
 const exitBtn = document.getElementById('exit-btn');
 const aboutScreen = document.getElementById('about-screen');
 const creditsScreen = document.getElementById('credits-screen');
+const howToScreen = document.getElementById('howto-screen');
 const backBtns = document.querySelectorAll('.back-btn');
 
 let score = 0;
@@ -87,6 +89,9 @@ let isInvincible = false;
 let scoreMultiplier = 1;
 let activePowerUps = {};
 let gameStarted = false;
+
+// High score (localStorage)
+let highScore = parseInt(localStorage.getItem('highScore') || '0', 10);
 
 // Level thresholds
 const LEVEL_THRESHOLDS = {
@@ -174,6 +179,12 @@ function loseLife() {
 
 function gameOver() {
     isGameOver = true;
+    // Update high score
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', String(highScore));
+    }
+
     if (gameOverEl) gameOverEl.style.display = 'block';
 }
 
@@ -637,6 +648,11 @@ function startGame() {
     }
 }
 
+function showHowTo() {
+    mainMenu.style.display = 'none';
+    howToScreen.style.display = 'flex';
+}
+
 function showAbout() {
     mainMenu.style.display = 'none';
     aboutScreen.style.display = 'flex';
@@ -658,6 +674,7 @@ function exitGame() {
 
 // Event Listeners
 startBtn.addEventListener('click', startGame);
+if (howToBtn) howToBtn.addEventListener('click', showHowTo);
 aboutBtn.addEventListener('click', showAbout);
 creditsBtn.addEventListener('click', showCredits);
 exitBtn.addEventListener('click', exitGame);
@@ -666,6 +683,7 @@ backBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         aboutScreen.style.display = 'none';
         creditsScreen.style.display = 'none';
+        if (howToScreen) howToScreen.style.display = 'none';
         mainMenu.style.display = 'flex';
     });
 });

@@ -19,6 +19,7 @@
     <div id="main-menu" style="display: none;">
         <h1>SPACE SHOOTER</h1>
         <button id="start-btn">START</button>
+        <button id="howto-btn">HOW TO PLAY</button>
         <button id="about-btn">ABOUT</button>
         <button id="credits-btn">CREDITS</button>
         <button id="exit-btn">EXIT</button>
@@ -35,6 +36,26 @@
         <h1>CREDITS</h1>
         <p>Spaceship Model: Free3D</p>
         <p>Textures: Solar System Scope</p>
+        <button class="back-btn">BACK</button>
+    </div>
+
+    <div id="howto-screen" class="menu-screen" style="display: none;">
+        <h1>HOW TO PLAY</h1>
+
+        <h2>Controls</h2>
+        <p>Move: Arrow keys or WASD</p>
+        <p>Shoot: Space</p>
+        <p>Pause: Enter</p>
+
+        <h2>Scoring</h2>
+        <p>Meteor: 100 pts &nbsp;&nbsp; Alien: 200 pts &nbsp;&nbsp; Comet: 300 pts &nbsp;&nbsp; Moon: 500 pts</p>
+
+        <h2>Power-Ups</h2>
+        <p>Extra Life, Health, Shield, Rapid Fire, 2x Score</p>
+
+        <h2>Levels</h2>
+        <p>Level up at: 1,000 / 2,500 / 5,000 points</p>
+
         <button class="back-btn">BACK</button>
     </div>
 
@@ -74,7 +95,8 @@
         </div>
     </div>
     <div id="app"></div>
-    <script type="module" src="./src/main.js"></script>
+    <!-- main.js will be loaded dynamically after intro video/menu using a small bootstrap script -->
+    <script type="module" src="./src/video-bootstrap.js"></script>
 </body>
 
 </html>
