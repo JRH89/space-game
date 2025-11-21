@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import ufoMtl from '../assets/UFO/UFO.mtl?url';
+import ufoObj from '../assets/UFO/UFO.obj?url';
 
 export class Aliens {
     constructor(scene, playerShip) {
@@ -7,26 +11,30 @@ export class Aliens {
         this.aliens = [];
         this.spawnRate = 0.003; // Lower spawn rate than meteors
         this.speed = 0.10;
+        this.modelLoaded = false;
+        this.ufoModel = null;
 
-        // Saucer geometry
-        this.geometry = new THREE.Group();
-        const saucerBody = new THREE.Mesh(
-            new THREE.SphereGeometry(0.5, 16, 16),
-            new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.9, roughness: 0.1 })
-        );
-        saucerBody.scale.y = 1.25;
-        this.geometry.add(saucerBody);
+        // Load the OBJ model with MTL materials
+        const mtlLoader = new MTLLoader();
+        mtlLoader.setResourcePath('/src/assets/UFO/');
+        mtlLoader.load(ufoMtl, (materials) => {
+            materials.preload();
 
-        const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(0.8, 0.15, 8, 16),
-            new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.9, roughness: 0.1 })
-        );
-        ring.rotation.x = Math.PI / 2;
-        this.geometry.add(ring);
+            const objLoader = new OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.load(ufoObj, (object) => {
+                this.ufoModel = object;
+                this.modelLoaded = true;
+            });
+        });
     }
 
     spawnAlien() {
-        const alien = this.geometry.clone();
+        // Only spawn if model is loaded
+        if (!this.modelLoaded || !this.ufoModel) return;
+
+        // Clone the loaded model
+        const alien = this.ufoModel.clone();
 
         // Random position at top
         const x = (Math.random() - 0.5) * 20;
