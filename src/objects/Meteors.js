@@ -1,5 +1,8 @@
 import * as THREE from 'three';
-import meteorTextureUrl from '../assets/textures/meteor.jpg';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import meteorMtl from '../assets/Meteor/Meteor.mtl?url';
+import meteorObj from '../assets/Meteor/Meteor.obj?url';
 
 export class Meteors {
     constructor(scene) {
@@ -7,33 +10,41 @@ export class Meteors {
         this.meteors = [];
         this.spawnRate = 0.01; // Chance to spawn per frame
         this.speed = 0.2;
+        this.modelLoaded = false;
+        this.meteorModel = null;
 
-        // Load texture
-        const textureLoader = new THREE.TextureLoader();
-        const meteorTexture = textureLoader.load(meteorTextureUrl);
+        // Load the OBJ model with MTL materials
+        const mtlLoader = new MTLLoader();
+        mtlLoader.setResourcePath('/src/assets/Meteor/');
+        mtlLoader.load(meteorMtl, (materials) => {
+            materials.preload();
 
-        // Reuse geometry and material for performance
-        this.geometry = new THREE.IcosahedronGeometry(1, 2);
-        this.material = new THREE.MeshStandardMaterial({
-            map: meteorTexture,
-            roughness: 0.8,
-            flatShading: true
+            const objLoader = new OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.load(meteorObj, (object) => {
+                this.meteorModel = object;
+                this.modelLoaded = true;
+            });
         });
     }
 
     spawnMeteor() {
-        const meteor = new THREE.Mesh(this.geometry, this.material);
+        // Only spawn if model is loaded
+        if (!this.modelLoaded || !this.meteorModel) return;
+
+        // Clone the loaded model
+        const meteor = this.meteorModel.clone();
 
         // Random position
         const x = (Math.random() - 0.5) * 20;
         const y = (Math.random() - 0.5) * 10;
-        const z = -50; // Start far away
+        const z = -80; // Start far away
 
         meteor.position.set(x, y, z);
 
         // Random rotation and scale
-        meteor.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-        const scale = 0.5 + Math.random() * 1.5;
+        meteor.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        const scale = 1.0 + Math.random() * 2;
         meteor.scale.set(scale, scale, scale);
 
         this.scene.add(meteor);

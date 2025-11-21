@@ -5,11 +5,31 @@ export class Starfield {
         this.scene = scene;
         this.count = count;
         this.geometry = new THREE.BufferGeometry();
+
+        // Create a circular texture for round stars
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+
+        // Draw a radial gradient circle
+        const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 32, 32);
+
+        const texture = new THREE.CanvasTexture(canvas);
+
         this.material = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 0.075,
+            size: 0.08,
             transparent: true,
-            opacity: 0.7
+            opacity: 0.8,
+            map: texture,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
 
         this.init();
