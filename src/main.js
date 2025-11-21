@@ -72,6 +72,8 @@ const introContainer = document.getElementById('intro-container');
 const introVideo = document.getElementById('intro-video');
 const mainMenu = document.getElementById('main-menu');
 const startBtn = document.getElementById('start-btn');
+const loadBtn = document.getElementById('load-btn');
+const saveBtn = document.getElementById('save-btn');
 const howToBtn = document.getElementById('howto-btn');
 const aboutBtn = document.getElementById('about-btn');
 const creditsBtn = document.getElementById('credits-btn');
@@ -99,6 +101,64 @@ function refreshHighScoreUI() {
     if (highScoreMainEl) highScoreMainEl.innerText = `High Score: ${highScore}`;
     if (highScoreOverEl) highScoreOverEl.innerText = `High Score: ${highScore}`;
 }
+
+// Save/Load Game Functions
+function saveGame() {
+    const gameState = {
+        lives: lives,
+        score: score,
+        level: level,
+        health: health,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('savedGame', JSON.stringify(gameState));
+
+    // Show save confirmation
+    const notification = document.createElement('div');
+    notification.style.position = 'fixed';
+    notification.style.top = '50%';
+    notification.style.left = '50%';
+    notification.style.transform = 'translate(-50%, -50%)';
+    notification.style.fontSize = '32px';
+    notification.style.color = '#00ff00';
+    notification.style.fontFamily = 'Courier New, monospace';
+    notification.style.fontWeight = 'bold';
+    notification.style.textShadow = '0 0 20px #00ff00';
+    notification.style.zIndex = '1000';
+    notification.style.pointerEvents = 'none';
+    notification.innerText = 'GAME SAVED!';
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 1500);
+}
+
+function loadGame() {
+    const savedData = localStorage.getItem('savedGame');
+    if (!savedData) return false;
+
+    try {
+        const gameState = JSON.parse(savedData);
+        score = gameState.score || 0;
+        lives = gameState.lives || 5;
+        level = gameState.level || 1;
+        health = gameState.health || 100;
+
+        return true;
+    } catch (e) {
+        console.error('Failed to load game:', e);
+        return false;
+    }
+}
+
+function hasSavedGame() {
+    return localStorage.getItem('savedGame') !== null;
+}
+
+function updateLoadButtonVisibility() {
+    if (loadBtn) {
+        loadBtn.style.display = hasSavedGame() ? 'block' : 'none';
+    }
+}
+
 
 // Level thresholds
 const LEVEL_THRESHOLDS = {
@@ -624,6 +684,7 @@ function initGame() {
         introVideo.onended = () => {
             if (introContainer) introContainer.style.display = 'none';
             if (mainMenu) mainMenu.style.display = 'flex';
+            updateLoadButtonVisibility();
         };
     }
 
@@ -638,17 +699,68 @@ function initGame() {
             }
             if (introContainer) introContainer.style.display = 'none';
             if (mainMenu) mainMenu.style.display = 'flex';
+            updateLoadButtonVisibility();
         });
     }
 
     gameStarted = false;
 }
 
-function startGame() {
+function startGame(isLoadingGame = false) {
     mainMenu.style.display = 'none';
     uiContainer.style.display = 'block';
     gameStarted = true;
-    restartGame(); // Starts fresh
+
+    if (!isLoadingGame) {
+        restartGame(); // Only reset if starting fresh
+    } else {
+        // When loading, just unpause and clear the scene
+        isPaused = false;
+        isGameOver = false;
+        isInvincible = false;
+        scoreMultiplier = 1;
+        activePowerUps = {};
+        ship.fireRate = 400;
+
+        // Update UI with loaded values
+        updateScore(0);
+        updateLives();
+        updateHealth();
+        updateLevel();
+        updatePowerUpUI();
+
+        // Clear scene entities
+        while (meteors.meteors.length > 0) {
+            scene.remove(meteors.meteors[0]);
+            meteors.meteors.shift();
+        }
+        while (lasers.lasers.length > 0) {
+            scene.remove(lasers.lasers[0]);
+            lasers.lasers.shift();
+        }
+        while (aliens.aliens.length > 0) {
+            scene.remove(aliens.aliens[0]);
+            aliens.aliens.shift();
+        }
+        while (comets.comets.length > 0) {
+            scene.remove(comets.comets[0]);
+            comets.comets.shift();
+        }
+        while (planets.planets.length > 0) {
+            scene.remove(planets.planets[0]);
+            planets.planets.shift();
+        }
+        while (powerUps.powerups.length > 0) {
+            scene.remove(powerUps.powerups[0]);
+            powerUps.powerups.shift();
+        }
+
+        ship.mesh.position.set(0, 0, 0);
+        ship.mesh.visible = true;
+
+        if (gameOverEl) gameOverEl.style.display = 'none';
+        if (pauseMenuEl) pauseMenuEl.style.display = 'none';
+    }
 
     // Show mobile controls on touch devices
     const mobileControls = document.getElementById('mobile-controls');
@@ -701,7 +813,15 @@ function exitGame() {
 }
 
 // Event Listeners
-startBtn.addEventListener('click', startGame);
+startBtn.addEventListener('click', () => startGame(false));
+if (loadBtn) loadBtn.addEventListener('click', () => {
+    if (loadGame()) {
+        startGame(true); // Pass true to indicate we're loading a saved game
+    }
+});
+if (saveBtn) saveBtn.addEventListener('click', () => {
+    saveGame();
+});
 if (howToBtn) howToBtn.addEventListener('click', showHowTo);
 aboutBtn.addEventListener('click', showAbout);
 creditsBtn.addEventListener('click', showCredits);
