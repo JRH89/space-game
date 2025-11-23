@@ -33,8 +33,8 @@ export class Planets {
 
         const planet = new THREE.Mesh(this.planetGeometry, this.planetMaterial);
         planet.userData.type = 'planet';
-        planet.userData.gravityRadius = 15;
-        planet.userData.gravityStrength = 0.05;
+        planet.userData.gravityRadius = 10; // Reduced from 15
+        planet.userData.gravityStrength = 0.04; // Reduced from 0.05
         planetGroup.add(planet);
 
         // Add Moon

@@ -24,9 +24,9 @@ export class Starfield {
 
         this.material = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 0.08,
+            size: 0.1,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.85,
             map: texture,
             blending: THREE.AdditiveBlending,
             depthWrite: false

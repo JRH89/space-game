@@ -26,11 +26,18 @@ export class Ship {
             const objLoader = new OBJLoader();
             objLoader.setMaterials(materials);
             objLoader.load(fighterObj, (object) => {
+                // Calculate responsive scale based on screen size
+                const baseScale = 0.3;
+                const screenWidth = window.innerWidth;
+                const scaleFactor = Math.min(1, screenWidth / 1920); // Scale down on smaller screens
+                const responsiveScale = baseScale * (0.7 + scaleFactor * 0.3); // Range from 0.7x to 1x of base
+
                 // Scale and rotate the model to fit the game
-                object.scale.set(0.3, 0.3, 0.3);
+                object.scale.set(responsiveScale, responsiveScale, responsiveScale);
                 object.rotation.y = Math.PI; // Rotate to face forward
 
                 this.mesh.add(object);
+                this.modelObject = object; // Store reference for later scaling updates
             });
         });
 
@@ -69,6 +76,16 @@ export class Ship {
         this.initTouchControls();
     }
 
+    updateScale() {
+        if (this.modelObject) {
+            const baseScale = 0.3;
+            const screenWidth = window.innerWidth;
+            const scaleFactor = Math.min(1, screenWidth / 1920);
+            const responsiveScale = baseScale * (0.7 + scaleFactor * 0.3);
+            this.modelObject.scale.set(responsiveScale, responsiveScale, responsiveScale);
+        }
+    }
+
     initTouchControls() {
         this.joystickBase = document.getElementById('joystick-base');
         this.joystickKnob = document.getElementById('joystick-knob');
@@ -96,8 +113,9 @@ export class Ship {
         const deltaX = touch.clientX - this.touchStartPos.x;
         const deltaY = touch.clientY - this.touchStartPos.y;
 
-        // Limit joystick movement to base radius
-        const maxDistance = 45; // Half of base width minus knob radius
+        // Limit joystick movement to base radius (dynamically calculated)
+        const rect = this.joystickBase.getBoundingClientRect();
+        const maxDistance = (rect.width / 2) - 35; // Half of base width minus knob radius
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
         if (distance > maxDistance) {
@@ -150,7 +168,7 @@ export class Ship {
         }
     }
 
-    update() {
+    update(camera) {
         // Idle animation
         this.mesh.rotation.z = 0; // Reset roll for banking effect later
 
@@ -178,8 +196,25 @@ export class Ship {
             this.mesh.rotation.z = -0.5; // Bank right
         }
 
-        // Boundaries (approximate for Z=0)
-        this.mesh.position.x = Math.max(-8, Math.min(8, this.mesh.position.x));
-        this.mesh.position.y = Math.max(-4, Math.min(4, this.mesh.position.y));
+        // Dynamic boundaries based on camera frustum
+        if (camera) {
+            const vFOV = THREE.MathUtils.degToRad(camera.fov);
+            const height = 2 * Math.tan(vFOV / 2) * Math.abs(this.mesh.position.z - camera.position.z);
+            const width = height * camera.aspect;
+
+            // Allow ship to go partially off-screen (up to 50% off each edge)
+            // This ensures the laser firing point (center of ship) can reach the screen edges
+            const shipWidth = 2; // Approximate ship width
+            const shipHeight = 1; // Approximate ship height
+            const paddingX = -shipWidth * 0.5; // Negative padding allows going off-screen
+            const paddingY = -shipHeight * 0.5;
+
+            this.mesh.position.x = Math.max(-width / 2 + paddingX, Math.min(width / 2 - paddingX, this.mesh.position.x));
+            this.mesh.position.y = Math.max(-height / 2 + paddingY, Math.min(height / 2 - paddingY, this.mesh.position.y));
+        } else {
+            // Fallback boundaries if camera not provided - also allow partial off-screen
+            this.mesh.position.x = Math.max(-9, Math.min(9, this.mesh.position.x));
+            this.mesh.position.y = Math.max(-5, Math.min(5, this.mesh.position.y));
+        }
     }
 }

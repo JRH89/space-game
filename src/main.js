@@ -15,6 +15,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Better mobile quality
 document.body.appendChild(renderer.domElement);
 
 // Lighting
@@ -54,6 +55,13 @@ const powerUps = new PowerUps(scene);
 camera.position.z = 5;
 camera.position.y = 2;
 camera.lookAt(0, 0, 0);
+
+// Initial FOV adjustment for portrait mode
+const initialAspect = window.innerWidth / window.innerHeight;
+if (initialAspect < 1) {
+    camera.fov = 75 + (1 - initialAspect) * 20;
+    camera.updateProjectionMatrix();
+}
 
 // UI Elements
 const scoreEl = document.getElementById('score');
@@ -328,9 +336,24 @@ window.addEventListener('keydown', (e) => {
 
 // Handle window resize
 window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = aspect;
+
+    // Adjust FOV for portrait mode (mobile devices)
+    if (aspect < 1) {
+        // Portrait mode - increase FOV to show more of the scene
+        camera.fov = 75 + (1 - aspect) * 20; // Gradually increase FOV for narrower screens
+    } else {
+        // Landscape mode - use default FOV
+        camera.fov = 75;
+    }
+
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Update ship scale for responsive sizing
+    ship.updateScale();
 });
 
 // Animation Loop
@@ -357,7 +380,7 @@ function animate() {
     }
 
     lasers.update();
-    ship.update();
+    ship.update(camera);
     explosions.update();
     powerUps.update();
 

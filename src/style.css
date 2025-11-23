@@ -7,12 +7,20 @@
 body {
   overflow: hidden;
   background-color: #000;
+  touch-action: none;
+  /* Prevent mobile scrolling/zooming */
+  user-select: none;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 canvas {
   display: block;
   width: 100vw;
   height: 100vh;
+  touch-action: none;
+  /* Prevent default touch behaviors */
 }
 
 #ui-container {
@@ -58,11 +66,11 @@ canvas {
   justify-content: center;
   align-items: center;
   text-align: center;
-  color: white;
+  color: #00ffcc;
   font-family: 'Courier New', Courier, monospace;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.9);
   padding: 40px;
-  border: 2px solid white;
+  border: 2px solid #00ffcc;
   pointer-events: auto;
 }
 
@@ -116,7 +124,7 @@ button:hover {
   width: 200px;
   height: 20px;
   background: rgba(0, 0, 0, 0.5);
-  border: 2px solid white;
+  border: 2px solid #00ffcc;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -407,9 +415,153 @@ button:hover {
     font-size: 16px;
   }
 }
+
 /* Hide mobile controls on desktop */
 @media (min-width: 769px) {
   #mobile-controls {
     display: none !important;
   }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  #score {
+    font-size: 16px;
+    top: 5px;
+    left: 5px;
+  }
+
+  #level {
+    font-size: 14px;
+    top: 28px;
+    left: 5px;
+  }
+
+  #lives-container {
+    top: 5px;
+    right: 5px;
+    gap: 3px;
+  }
+
+  .life-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  #health-bar-container {
+    top: 50px;
+    left: 5px;
+    width: 120px;
+    height: 15px;
+  }
+
+  #powerups-container {
+    top: 72px;
+    left: 5px;
+  }
+
+  .powerup-indicator {
+    font-size: 12px;
+    padding: 2px 6px;
+  }
+
+  #main-menu h1,
+  .menu-screen h1 {
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+
+  #main-menu button,
+  .menu-screen button {
+    width: 220px;
+    font-size: 18px;
+    padding: 10px 25px;
+    margin: 8px;
+  }
+
+  .menu-screen p {
+    font-size: 16px;
+    max-width: 320px;
+  }
+
+  #joystick-container {
+    bottom: 15px;
+    left: 15px;
+    width: 100px;
+    height: 100px;
+  }
+
+  #joystick-base {
+    width: 100px;
+    height: 100px;
+  }
+
+  #joystick-knob {
+    width: 40px;
+    height: 40px;
+  }
+
+  #shoot-button {
+    bottom: 30px;
+    right: 15px;
+    width: 70px;
+    height: 70px;
+    font-size: 14px;
+  }
+
+  #game-over,
+  #pause-menu {
+    padding: 20px;
+  }
+
+  #game-over h1,
+  #pause-menu h1 {
+    font-size: 28px;
+  }
+
+  #game-over button,
+  #pause-menu button {
+    font-size: 16px;
+    padding: 8px 16px;
+  }
+}
+
+/* Pause Menu & Game Over Styling */
+#game-over h1,
+#pause-menu h1 {
+  font-size: 2rem;
+  margin-bottom: 24px;
+  text-shadow: 0 0 16px #00ffcc;
+  color: #00ffcc;
+}
+
+#game-over p,
+#pause-menu p {
+  font-size: 1rem;
+  margin-bottom: 20px;
+  color: white;
+}
+
+#game-over button,
+#pause-menu button {
+  padding: 15px 20px;
+  font-size: 1rem;
+  margin: 10px;
+  width: 100%;
+  background: transparent;
+  border: 2px solid #00ffcc;
+  color: #00ffcc;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+#game-over button:hover,
+#pause-menu button:hover {
+  background: #00ffcc;
+  color: black;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+  transform: scale(1.05);
 }
