@@ -103,6 +103,7 @@ export class Ship {
         const rect = this.joystickBase.getBoundingClientRect();
         this.touchStartPos.x = rect.left + rect.width / 2;
         this.touchStartPos.y = rect.top + rect.height / 2;
+        this.maxJoystickRange = (rect.width / 2) - 35;
     }
 
     onJoystickTouchMove(event) {
@@ -113,9 +114,8 @@ export class Ship {
         const deltaX = touch.clientX - this.touchStartPos.x;
         const deltaY = touch.clientY - this.touchStartPos.y;
 
-        // Limit joystick movement to base radius (dynamically calculated)
-        const rect = this.joystickBase.getBoundingClientRect();
-        const maxDistance = (rect.width / 2) - 35; // Half of base width minus knob radius
+        // Limit joystick movement to base radius
+        const maxDistance = this.maxJoystickRange || 40; // Fallback if not set
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
         if (distance > maxDistance) {
@@ -174,13 +174,19 @@ export class Ship {
 
         // Touch controls movement
         if (this.touchActive) {
-            const sensitivity = 0.03; // Reduced sensitivity for better control
-            this.mesh.position.x += this.touchCurrentPos.x * sensitivity;
-            this.mesh.position.y -= this.touchCurrentPos.y * sensitivity; // Invert Y for natural feel
+            const maxSpeed = 0.12; // Consistent max speed regardless of screen size
+            const range = this.maxJoystickRange || 40;
+
+            // Normalize input (-1 to 1)
+            const inputX = this.touchCurrentPos.x / range;
+            const inputY = this.touchCurrentPos.y / range;
+
+            this.mesh.position.x += inputX * maxSpeed;
+            this.mesh.position.y -= inputY * maxSpeed; // Invert Y for natural feel
 
             // Banking effect for touch
-            if (Math.abs(this.touchCurrentPos.x) > 10) {
-                this.mesh.rotation.z = -this.touchCurrentPos.x * 0.01;
+            if (Math.abs(inputX) > 0.1) {
+                this.mesh.rotation.z = -inputX * 0.5;
             }
         }
 
