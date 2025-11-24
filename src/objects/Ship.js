@@ -223,4 +223,52 @@ export class Ship {
             this.mesh.position.y = Math.max(-5, Math.min(5, this.mesh.position.y));
         }
     }
+    updateRainbowEffect(isHyperspace) {
+        if (!this.modelObject) return;
+
+        if (isHyperspace) {
+            const time = Date.now() * 0.005;
+            const color = new THREE.Color().setHSL(Math.sin(time), 1.0, 0.5);
+
+            this.modelObject.traverse((child) => {
+                if (child.isMesh) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => {
+                            mat.emissive = color;
+                            mat.emissiveIntensity = 0.8;
+                        });
+                    } else {
+                        child.material.emissive = color;
+                        child.material.emissiveIntensity = 0.8;
+                    }
+                }
+            });
+
+            // Also update the ship light
+            if (this.shipLight) {
+                this.shipLight.color = color;
+                this.shipLight.intensity = 4;
+            }
+        } else {
+            // Reset to default
+            this.modelObject.traverse((child) => {
+                if (child.isMesh) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => {
+                            mat.emissive = mat.color.clone();
+                            mat.emissiveIntensity = 0.1;
+                        });
+                    } else {
+                        child.material.emissive = child.material.color.clone();
+                        child.material.emissiveIntensity = 0.1;
+                    }
+                }
+            });
+
+            if (this.shipLight) {
+                this.shipLight.color.setHex(0xffffff);
+                this.shipLight.intensity = 2;
+            }
+        }
+    }
 }

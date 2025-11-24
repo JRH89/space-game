@@ -176,6 +176,24 @@ function activatePowerUp(type) {
                 }
             }, 10000);
             break;
+
+        case 'hyperspace':
+            gameState.isHyperspace = true;
+            gameState.hyperspaceEndTime = now + 10000; // 10 seconds
+            gameState.activePowerUps['hyperspace'] = gameState.hyperspaceEndTime;
+
+            // Visuals
+            // starfield.setHyperspaceMode(true); // Disabled per user request
+
+            setTimeout(() => {
+                if (Date.now() >= gameState.activePowerUps['hyperspace']) {
+                    gameState.isHyperspace = false;
+                    // starfield.setHyperspaceMode(false); // Disabled per user request
+                    delete gameState.activePowerUps['hyperspace'];
+                    UI.updatePowerUpUI(gameState.activePowerUps);
+                }
+            }, 10000);
+            break;
     }
     UI.updatePowerUpUI(gameState.activePowerUps);
 }
@@ -234,6 +252,7 @@ function startGame(isLoadingGame = false) {
         gameState.isInvincible = false;
         gameState.scoreMultiplier = 1;
         gameState.activePowerUps = {};
+        // starfield.setHyperspaceMode(false);
         ship.fireRate = 400;
 
         UI.updateScoreUI(gameState.score);
@@ -340,6 +359,7 @@ function animate() {
 
     lasers.update();
     ship.update(camera);
+    ship.updateRainbowEffect(gameState.isHyperspace);
     explosions.update();
     powerUps.update();
 
