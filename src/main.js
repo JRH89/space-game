@@ -9,604 +9,122 @@ import { Comets } from './objects/Comets.js';
 import { Planets } from './objects/Planets.js';
 import { PowerUps } from './objects/PowerUps.js';
 
+import { createScene } from './modules/SceneSetup.js';
+import { gameState, resetGameState, saveGame as saveGameState, loadGame as loadGameState, hasSavedGame, LEVEL_THRESHOLDS } from './modules/GameState.js';
+import * as UI from './modules/UIManager.js';
+import { initInput } from './modules/InputHandler.js';
+import { checkCollisions, applyGravity } from './modules/CollisionHandler.js';
+
 // Scene setup
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const { scene, camera, renderer } = createScene();
 
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Better mobile quality
-document.body.appendChild(renderer.domElement);
-
-// Lighting
-const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
-scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-directionalLight.position.set(0, 1, 1);
-scene.add(directionalLight);
-
-// Starfield
+// Game Objects
 const starfield = new Starfield(scene);
-
-// Meteors
 const meteors = new Meteors(scene);
-
-// Comets
 const comets = new Comets(scene);
-
-// Planets
 const planets = new Planets(scene);
-
-// Lasers
 const lasers = new Lasers(scene);
-
-// Explosions
 const explosions = new Explosions(scene);
-
-// Player Ship
 const ship = new Ship(scene, lasers);
-
-// Aliens
 const aliens = new Aliens(scene, ship);
-
-// Power-ups
 const powerUps = new PowerUps(scene);
 
-camera.position.z = 5;
-camera.position.y = 2;
-camera.lookAt(0, 0, 0);
+// Initialize Input
+initInput(camera, renderer, ship, {
+    onPause: togglePause
+});
 
-// Initial FOV adjustment for portrait mode
-const initialAspect = window.innerWidth / window.innerHeight;
-if (initialAspect < 1) {
-    camera.fov = 75 + (1 - initialAspect) * 20;
-    camera.updateProjectionMatrix();
-}
-
-// UI Elements
-const scoreEl = document.getElementById('score');
-const gameOverEl = document.getElementById('game-over');
-const restartBtn = document.getElementById('restart-btn');
-const pauseMenuEl = document.getElementById('pause-menu');
-const resumeBtn = document.getElementById('resume-btn');
-const livesEl = document.getElementById('lives');
-const healthBarEl = document.getElementById('health-bar');
-const uiContainer = document.getElementById('ui-container');
-const highScoreMainEl = document.getElementById('high-score-main');
-const highScoreOverEl = document.getElementById('high-score-over');
-
-// Menu Elements
-const introContainer = document.getElementById('intro-container');
-const introVideo = document.getElementById('intro-video');
-const mainMenu = document.getElementById('main-menu');
-const startBtn = document.getElementById('start-btn');
-const loadBtn = document.getElementById('load-btn');
-const saveBtn = document.getElementById('save-btn');
-const howToBtn = document.getElementById('howto-btn');
-const aboutBtn = document.getElementById('about-btn');
-const creditsBtn = document.getElementById('credits-btn');
-const exitBtn = document.getElementById('exit-btn');
-const aboutScreen = document.getElementById('about-screen');
-const creditsScreen = document.getElementById('credits-screen');
-const howToScreen = document.getElementById('howto-screen');
-const backBtns = document.querySelectorAll('.back-btn');
-
-let score = 0;
-let lives = 5;
-let health = 100;
-let level = 1;
-let isGameOver = false;
-let isPaused = true; // Start paused
-let isInvincible = false;
-let scoreMultiplier = 1;
-let activePowerUps = {};
-let gameStarted = false;
-
-// High score (localStorage)
-let highScore = parseInt(localStorage.getItem('highScore') || '0', 10);
-
-function refreshHighScoreUI() {
-    if (highScoreMainEl) highScoreMainEl.innerText = `High Score: ${highScore}`;
-    if (highScoreOverEl) highScoreOverEl.innerText = `High Score: ${highScore}`;
-}
-
-// Save/Load Game Functions
-function saveGame() {
-    const gameState = {
-        lives: lives,
-        score: score,
-        level: level,
-        health: health,
-        timestamp: Date.now()
-    };
-    localStorage.setItem('savedGame', JSON.stringify(gameState));
-
-    // Show save confirmation
-    const notification = document.createElement('div');
-    notification.style.position = 'fixed';
-    notification.style.top = '50%';
-    notification.style.left = '50%';
-    notification.style.transform = 'translate(-50%, -50%)';
-    notification.style.fontSize = '32px';
-    notification.style.color = '#00ff00';
-    notification.style.fontFamily = 'Courier New, monospace';
-    notification.style.fontWeight = 'bold';
-    notification.style.textShadow = '0 0 20px #00ff00';
-    notification.style.zIndex = '1000';
-    notification.style.pointerEvents = 'none';
-    notification.innerText = 'GAME SAVED!';
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 1500);
-}
-
-function loadGame() {
-    const savedData = localStorage.getItem('savedGame');
-    if (!savedData) return false;
-
-    try {
-        const gameState = JSON.parse(savedData);
-        score = gameState.score || 0;
-        lives = gameState.lives || 5;
-        level = gameState.level || 1;
-        health = gameState.health || 100;
-
-        return true;
-    } catch (e) {
-        console.error('Failed to load game:', e);
-        return false;
-    }
-}
-
-function hasSavedGame() {
-    return localStorage.getItem('savedGame') !== null;
-}
-
-function updateLoadButtonVisibility() {
-    if (loadBtn) {
-        loadBtn.style.display = hasSavedGame() ? 'block' : 'none';
-    }
-}
-
-
-// Level thresholds
-const LEVEL_THRESHOLDS = {
-    2: 1000,
-    3: 2500,
-    4: 5000,
-    5: 10000
-};
-
+// Game Logic Functions
 function updateScore(points) {
-    score += points * scoreMultiplier;
-    if (scoreEl) scoreEl.innerText = `Score: ${score}`;
+    gameState.score += points * gameState.scoreMultiplier;
+    UI.updateScoreUI(gameState.score);
     checkLevelUp();
 }
 
 function checkLevelUp() {
     for (let nextLevel in LEVEL_THRESHOLDS) {
-        if (score >= LEVEL_THRESHOLDS[nextLevel] && level < nextLevel) {
-            level = parseInt(nextLevel);
-            updateLevel();
-            showLevelUpMessage();
+        if (gameState.score >= LEVEL_THRESHOLDS[nextLevel] && gameState.level < nextLevel) {
+            gameState.level = parseInt(nextLevel);
+            UI.updateLevelUI(gameState.level);
+            UI.showLevelUpMessage(gameState.level);
             break;
         }
     }
 }
 
-function updateLevel() {
-    const levelEl = document.getElementById('level');
-    if (levelEl) levelEl.innerText = `Level: ${level}`;
-}
-
-function showLevelUpMessage() {
-    const notification = document.createElement('div');
-    notification.style.position = 'fixed';
-    notification.style.top = '50%';
-    notification.style.left = '50%';
-    notification.style.transform = 'translate(-50%, -50%)';
-    notification.style.fontSize = '48px';
-    notification.style.color = '#00ffcc';
-    notification.style.fontFamily = 'Courier New, monospace';
-    notification.style.fontWeight = 'bold';
-    notification.style.textShadow = '0 0 20px #00ffcc';
-    notification.style.zIndex = '1000';
-    notification.style.pointerEvents = 'none';
-    notification.innerText = `LEVEL ${level}!`;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 2000);
-}
-
-function updateLives() {
-    if (!livesEl) return;
-    livesEl.innerHTML = '';
-    for (let i = 0; i < lives; i++) {
-        const lifeIcon = document.createElement('div');
-        lifeIcon.className = 'life-icon';
-        livesEl.appendChild(lifeIcon);
-    }
-}
-
-function updateHealth() {
-    if (!healthBarEl) return;
-    healthBarEl.style.width = `${health}%`;
-}
-
 function loseLife() {
-    lives--;
-    updateLives();
+    gameState.lives--;
+    UI.updateLivesUI(gameState.lives);
 
-    if (lives <= 0) {
+    if (gameState.lives <= 0) {
         gameOver();
     } else {
         // Respawn with invincibility
-        health = 100;
-        updateHealth();
+        gameState.health = 100;
+        UI.updateHealthUI(gameState.health);
         ship.mesh.position.set(0, 0, 0);
         ship.mesh.visible = true;
 
         // Brief invincibility
-        isInvincible = true;
+        gameState.isInvincible = true;
         setTimeout(() => {
-            isInvincible = false;
+            gameState.isInvincible = false;
         }, 2000);
     }
 }
 
 function gameOver() {
-    isGameOver = true;
+    gameState.isGameOver = true;
     // Update high score
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('highScore', String(highScore));
+    if (gameState.score > gameState.highScore) {
+        gameState.highScore = gameState.score;
+        localStorage.setItem('highScore', String(gameState.highScore));
     }
 
-    refreshHighScoreUI();
-
-    if (gameOverEl) gameOverEl.style.display = 'block';
+    UI.refreshHighScoreUI(gameState.highScore);
+    UI.showGameOver(true);
 }
 
 function restartGame() {
-    isGameOver = false;
-    isPaused = false;
-    score = 0;
-    lives = 5;
-    health = 100;
-    level = 1;
-    isInvincible = false;
-    scoreMultiplier = 1;
-    activePowerUps = {};
+    resetGameState();
     ship.fireRate = 400; // Reset fire rate
 
-    updateScore(0);
-    updateLives();
-    updateHealth();
-    updateLevel();
-    updatePowerUpUI();
-
-    if (gameOverEl) gameOverEl.style.display = 'none';
-    if (pauseMenuEl) pauseMenuEl.style.display = 'none';
+    UI.updateScoreUI(0);
+    UI.updateLivesUI(gameState.lives);
+    UI.updateHealthUI(gameState.health);
+    UI.updateLevelUI(gameState.level);
+    UI.updatePowerUpUI(gameState.activePowerUps);
+    UI.showGameOver(false);
+    UI.togglePauseMenu(false);
 
     // Clear scene entities
-    while (meteors.meteors.length > 0) {
-        scene.remove(meteors.meteors[0]);
-        meteors.meteors.shift();
-    }
-    while (lasers.lasers.length > 0) {
-        scene.remove(lasers.lasers[0]);
-        lasers.lasers.shift();
-    }
-    while (aliens.aliens.length > 0) {
-        scene.remove(aliens.aliens[0]);
-        aliens.aliens.shift();
-    }
-    while (comets.comets.length > 0) {
-        scene.remove(comets.comets[0]);
-        comets.comets.shift();
-    }
-    while (planets.planets.length > 0) {
-        scene.remove(planets.planets[0]);
-        planets.planets.shift();
-    }
-    while (powerUps.powerups.length > 0) {
-        scene.remove(powerUps.powerups[0]);
-        powerUps.powerups.shift();
-    }
+    clearSceneEntities();
 
     ship.mesh.position.set(0, 0, 0);
     ship.mesh.visible = true;
 }
 
+function clearSceneEntities() {
+    const clearList = (manager) => {
+        const list = manager[Object.keys(manager).find(k => Array.isArray(manager[k]))];
+        while (list.length > 0) {
+            scene.remove(list[0]);
+            list.shift();
+        }
+    };
+
+    clearList(meteors);
+    clearList(lasers);
+    clearList(aliens);
+    clearList(comets);
+    clearList(planets);
+    clearList(powerUps);
+}
+
 function togglePause() {
-    if (isGameOver || !gameStarted) return;
-    isPaused = !isPaused;
-    if (pauseMenuEl) {
-        pauseMenuEl.style.display = isPaused ? 'block' : 'none';
-    }
-}
-
-if (restartBtn) restartBtn.addEventListener('click', restartGame);
-if (resumeBtn) resumeBtn.addEventListener('click', togglePause);
-
-// Handle Enter key for pause
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'Enter') {
-        togglePause();
-    }
-});
-
-// Handle window resize
-window.addEventListener('resize', () => {
-    const aspect = window.innerWidth / window.innerHeight;
-    camera.aspect = aspect;
-
-    // Adjust FOV for portrait mode (mobile devices)
-    if (aspect < 1) {
-        // Portrait mode - increase FOV to show more of the scene
-        camera.fov = 75 + (1 - aspect) * 20; // Gradually increase FOV for narrower screens
-    } else {
-        // Landscape mode - use default FOV
-        camera.fov = 75;
-    }
-
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-    // Update ship scale for responsive sizing
-    ship.updateScale();
-});
-
-// Animation Loop
-function animate() {
-    requestAnimationFrame(animate);
-
-    if (isGameOver || isPaused) return;
-
-    // Update game objects
-    starfield.update();
-
-    // Level 1+: Always spawn meteors and planets
-    meteors.update();
-    planets.update();
-
-    // Level 2+: Spawn aliens
-    if (level >= 2) {
-        aliens.update();
-    }
-
-    // Level 3+: Spawn comets
-    if (level >= 3) {
-        comets.update();
-    }
-
-    lasers.update();
-    ship.update(camera);
-    explosions.update();
-    powerUps.update();
-
-    applyGravity();
-    checkCollisions();
-
-    renderer.render(scene, camera);
-}
-
-function applyGravity() {
-    const shipMesh = ship.mesh;
-
-    for (const planetGroup of planets.planets) {
-        const planet = planetGroup.children[0]; // First child is planet mesh
-
-        // Calculate distance
-        const distance = shipMesh.position.distanceTo(planetGroup.position);
-
-        if (distance < planet.userData.gravityRadius) {
-            // Pull ship towards planet
-            const direction = new THREE.Vector3().subVectors(planetGroup.position, shipMesh.position).normalize();
-            shipMesh.position.add(direction.multiplyScalar(planet.userData.gravityStrength));
-        }
-    }
-}
-
-function checkCollisions() {
-    const laserList = lasers.lasers;
-    const meteorList = meteors.meteors;
-    const alienList = aliens.aliens;
-    const cometList = comets.comets;
-    const planetList = planets.planets;
-    const shipMesh = ship.mesh;
-
-    // Lasers vs Meteors & Aliens & Comets & Moons
-    for (let i = laserList.length - 1; i >= 0; i--) {
-        const laser = laserList[i];
-        const laserBox = new THREE.Box3().setFromObject(laser);
-        let laserHit = false;
-
-        // Check Meteors
-        for (let j = meteorList.length - 1; j >= 0; j--) {
-            const meteor = meteorList[j];
-            const meteorBox = new THREE.Box3().setFromObject(meteor);
-            meteorBox.expandByScalar(-0.3); // Tighten collision
-
-            if (laserBox.intersectsBox(meteorBox)) {
-                explosions.explode(meteor.position);
-                scene.remove(laser);
-                scene.remove(meteor);
-                laserList.splice(i, 1);
-                meteorList.splice(j, 1);
-                updateScore(100);
-                laserHit = true;
-                break;
-            }
-        }
-        if (laserHit) continue;
-
-        // Check Aliens
-        for (let k = alienList.length - 1; k >= 0; k--) {
-            const alien = alienList[k];
-            const alienBox = new THREE.Box3().setFromObject(alien);
-            alienBox.expandByScalar(-0.4); // Tighten collision
-
-            if (laserBox.intersectsBox(alienBox)) {
-                explosions.explode(alien.position);
-                scene.remove(laser);
-                scene.remove(alien);
-                laserList.splice(i, 1);
-                alienList.splice(k, 1);
-                updateScore(200);
-                laserHit = true;
-                break;
-            }
-        }
-        if (laserHit) continue;
-
-        // Check Comets
-        for (let l = cometList.length - 1; l >= 0; l--) {
-            const comet = cometList[l];
-            const cometBox = new THREE.Box3().setFromObject(comet);
-
-            if (laserBox.intersectsBox(cometBox)) {
-                explosions.explode(comet.position);
-                scene.remove(laser);
-                scene.remove(comet);
-                laserList.splice(i, 1);
-                cometList.splice(l, 1);
-                updateScore(300);
-                laserHit = true;
-                break;
-            }
-        }
-        if (laserHit) continue;
-
-        // Check Moons
-        for (let m = 0; m < planetList.length; m++) {
-            const planetGroup = planetList[m];
-            const moon = planetGroup.userData.moon;
-
-            if (moon) {
-                // Need world position for collision check since moon is child of planetGroup
-                const moonWorldPos = new THREE.Vector3();
-                moon.getWorldPosition(moonWorldPos);
-                const moonBox = new THREE.Box3().setFromCenterAndSize(moonWorldPos, new THREE.Vector3(1.6, 1.6, 1.6)); // Approx size
-
-                if (laserBox.intersectsBox(moonBox)) {
-                    explosions.explode(moonWorldPos);
-                    scene.remove(laser);
-                    planetGroup.remove(moon);
-                    planetGroup.userData.moon = null; // Remove reference
-
-                    laserList.splice(i, 1);
-                    updateScore(500);
-                    laserHit = true;
-
-                    // Disable gravity for this planet if moon destroyed? User said "destroy its moon to escape the pull"
-                    planetGroup.children[0].userData.gravityStrength = 0;
-
-                    break;
-                }
-            }
-        }
-    }
-
-    // Ship vs Meteors & Aliens & Comets & Planets
-    const shipBox = new THREE.Box3().setFromObject(shipMesh);
-    shipBox.expandByScalar(-0.2);
-
-    // Check Meteors
-    for (let i = meteorList.length - 1; i >= 0; i--) {
-        const meteor = meteorList[i];
-        const meteorBox = new THREE.Box3().setFromObject(meteor);
-        meteorBox.expandByScalar(-0.3); // Tighten collision
-
-        if (shipBox.intersectsBox(meteorBox) && !isInvincible) {
-            explosions.explode(shipMesh.position);
-            scene.remove(meteor);
-            meteorList.splice(i, 1);
-
-            // Reduce health
-            health -= 25;
-            updateHealth();
-
-            if (health <= 0) {
-                shipMesh.visible = false;
-                setTimeout(() => loseLife(), 300);
-            }
-        }
-    }
-
-    // Check Aliens
-    for (let i = alienList.length - 1; i >= 0; i--) {
-        const alien = alienList[i];
-        const alienBox = new THREE.Box3().setFromObject(alien);
-        alienBox.expandByScalar(-0.5); // Tighten collision
-
-        if (shipBox.intersectsBox(alienBox) && !isInvincible) {
-            explosions.explode(shipMesh.position);
-            scene.remove(alien);
-            alienList.splice(i, 1);
-
-            // Reduce health
-            health -= 30;
-            updateHealth();
-
-            if (health <= 0) {
-                shipMesh.visible = false;
-                setTimeout(() => loseLife(), 300);
-            }
-        }
-    }
-
-    // Check Comets
-    for (let i = cometList.length - 1; i >= 0; i--) {
-        const comet = cometList[i];
-        const cometBox = new THREE.Box3().setFromObject(comet);
-        cometBox.expandByScalar(-0.3); // Tighten collision
-
-        if (shipBox.intersectsBox(cometBox) && !isInvincible) {
-            explosions.explode(shipMesh.position);
-            scene.remove(comet);
-            cometList.splice(i, 1);
-
-            // Reduce health
-            health -= 40;
-            updateHealth();
-
-            if (health <= 0) {
-                shipMesh.visible = false;
-                setTimeout(() => loseLife(), 300);
-            }
-        }
-    }
-
-    // Check Planets (Crash)
-    for (let i = 0; i < planetList.length; i++) {
-        const planetGroup = planetList[i];
-        const planet = planetGroup.children[0];
-        const planetWorldPos = new THREE.Vector3();
-        planet.getWorldPosition(planetWorldPos);
-
-        // Reduced collision radius - gives more time to destroy moon before crash
-        if (shipMesh.position.distanceTo(planetWorldPos) < 3.2) { // Smaller = more time
-            explosions.explode(shipMesh.position);
-
-            // Reduce health massively
-            health = 0;
-            updateHealth();
-
-            shipMesh.visible = false;
-            setTimeout(() => loseLife(), 300);
-        }
-    }
-
-    // Check Power-ups
-    for (let i = powerUps.powerups.length - 1; i >= 0; i--) {
-        const powerUp = powerUps.powerups[i];
-        const powerUpBox = new THREE.Box3().setFromObject(powerUp);
-
-        if (shipBox.intersectsBox(powerUpBox)) {
-            const type = powerUps.collect(powerUp);
-            activatePowerUp(type);
-        }
-    }
+    if (gameState.isGameOver || !gameState.gameStarted) return;
+    gameState.isPaused = !gameState.isPaused;
+    UI.togglePauseMenu(gameState.isPaused);
 }
 
 function activatePowerUp(type) {
@@ -614,285 +132,247 @@ function activatePowerUp(type) {
 
     switch (type) {
         case 'extraLife':
-            lives++;
-            updateLives();
+            gameState.lives++;
+            UI.updateLivesUI(gameState.lives);
             break;
 
         case 'health':
-            health = Math.min(100, health + 25);
-            updateHealth();
+            gameState.health = Math.min(100, gameState.health + 25);
+            UI.updateHealthUI(gameState.health);
             break;
 
         case 'shield':
-            isInvincible = true;
-            activePowerUps['shield'] = now + 5000;
+            gameState.isInvincible = true;
+            gameState.activePowerUps['shield'] = now + 5000;
             setTimeout(() => {
-                if (Date.now() >= activePowerUps['shield']) {
-                    isInvincible = false;
-                    delete activePowerUps['shield'];
-                    updatePowerUpUI();
+                if (Date.now() >= gameState.activePowerUps['shield']) {
+                    gameState.isInvincible = false;
+                    delete gameState.activePowerUps['shield'];
+                    UI.updatePowerUpUI(gameState.activePowerUps);
                 }
             }, 5000);
             break;
 
         case 'rapidFire':
             ship.fireRate = 100;
-            activePowerUps['rapidFire'] = now + 5000;
+            gameState.activePowerUps['rapidFire'] = now + 5000;
             setTimeout(() => {
-                if (Date.now() >= activePowerUps['rapidFire']) {
+                if (Date.now() >= gameState.activePowerUps['rapidFire']) {
                     ship.fireRate = 400;
-                    delete activePowerUps['rapidFire'];
-                    updatePowerUpUI();
+                    delete gameState.activePowerUps['rapidFire'];
+                    UI.updatePowerUpUI(gameState.activePowerUps);
                 }
             }, 5000);
             break;
 
         case 'scoreMultiplier':
-            scoreMultiplier = 2;
-            activePowerUps['scoreMultiplier'] = now + 10000;
+            gameState.scoreMultiplier = 2;
+            gameState.activePowerUps['scoreMultiplier'] = now + 10000;
             setTimeout(() => {
-                if (Date.now() >= activePowerUps['scoreMultiplier']) {
-                    scoreMultiplier = 1;
-                    delete activePowerUps['scoreMultiplier'];
-                    updatePowerUpUI();
+                if (Date.now() >= gameState.activePowerUps['scoreMultiplier']) {
+                    gameState.scoreMultiplier = 1;
+                    delete gameState.activePowerUps['scoreMultiplier'];
+                    UI.updatePowerUpUI(gameState.activePowerUps);
                 }
             }, 10000);
             break;
     }
-    updatePowerUpUI();
+    UI.updatePowerUpUI(gameState.activePowerUps);
 }
 
-function updatePowerUpUI() {
-    const container = document.getElementById('powerups-container');
-    if (!container) return;
+function saveGame() {
+    saveGameState();
+    UI.showSaveConfirmation();
+}
 
-    container.innerHTML = '';
-
-    if (activePowerUps['shield']) {
-        const div = document.createElement('div');
-        div.className = 'powerup-indicator';
-        div.style.color = '#0088ff';
-        div.style.borderColor = '#0088ff';
-        div.innerText = 'SHIELD ACTIVE';
-        container.appendChild(div);
-    }
-
-    if (activePowerUps['rapidFire']) {
-        const div = document.createElement('div');
-        div.className = 'powerup-indicator';
-        div.style.color = '#ff8800';
-        div.style.borderColor = '#ff8800';
-        div.innerText = 'RAPID FIRE';
-        container.appendChild(div);
-    }
-
-    if (activePowerUps['scoreMultiplier']) {
-        const div = document.createElement('div');
-        div.className = 'powerup-indicator';
-        div.style.color = '#ffdd00';
-        div.style.borderColor = '#ffdd00';
-        div.innerText = '2X SCORE';
-        container.appendChild(div);
+function loadGame() {
+    if (loadGameState()) {
+        startGame(true);
     }
 }
 
 function initGame() {
     // Show intro video first, hide menu and in-game UI
-    if (introContainer) introContainer.style.display = 'flex';
-    if (mainMenu) mainMenu.style.display = 'none';
-    if (uiContainer) uiContainer.style.display = 'none';
+    if (UI.UIElements.introContainer) UI.UIElements.introContainer.style.display = 'flex';
+    if (UI.UIElements.mainMenu) UI.UIElements.mainMenu.style.display = 'none';
+    if (UI.UIElements.uiContainer) UI.UIElements.uiContainer.style.display = 'none';
 
-    // When video finishes, go to main menu
-    if (introVideo) {
-        introVideo.onended = () => {
-            if (introContainer) introContainer.style.display = 'none';
-            if (mainMenu) mainMenu.style.display = 'flex';
-            updateLoadButtonVisibility();
-        };
+    const onIntroEnd = () => {
+        if (UI.UIElements.introContainer) UI.UIElements.introContainer.style.display = 'none';
+        if (UI.UIElements.mainMenu) UI.UIElements.mainMenu.style.display = 'flex';
+        UI.updateLoadButtonVisibility(hasSavedGame());
+    };
+
+    if (UI.UIElements.introVideo) {
+        UI.UIElements.introVideo.onended = onIntroEnd;
     }
 
-    // Skip button: same as video end
-    const skipIntroBtn = document.getElementById('skip-intro-btn');
-    if (skipIntroBtn) {
-        skipIntroBtn.style.display = 'block';
-        skipIntroBtn.addEventListener('click', () => {
-            if (introVideo) {
-                introVideo.pause();
-                introVideo.currentTime = 0;
+    if (UI.UIElements.skipIntroBtn) {
+        UI.UIElements.skipIntroBtn.style.display = 'block';
+        UI.UIElements.skipIntroBtn.addEventListener('click', () => {
+            if (UI.UIElements.introVideo) {
+                UI.UIElements.introVideo.pause();
+                UI.UIElements.introVideo.currentTime = 0;
             }
-            if (introContainer) introContainer.style.display = 'none';
-            if (mainMenu) mainMenu.style.display = 'flex';
-            updateLoadButtonVisibility();
+            onIntroEnd();
         });
     }
 
-    gameStarted = false;
+    gameState.gameStarted = false;
 }
 
 function startGame(isLoadingGame = false) {
-    mainMenu.style.display = 'none';
-    uiContainer.style.display = 'block';
-    gameStarted = true;
+    UI.UIElements.mainMenu.style.display = 'none';
+    UI.UIElements.uiContainer.style.display = 'block';
+    gameState.gameStarted = true;
 
     if (!isLoadingGame) {
-        restartGame(); // Only reset if starting fresh
+        restartGame();
     } else {
-        // When loading, just unpause and clear the scene
-        isPaused = false;
-        isGameOver = false;
-        isInvincible = false;
-        scoreMultiplier = 1;
-        activePowerUps = {};
+        gameState.isPaused = false;
+        gameState.isGameOver = false;
+        gameState.isInvincible = false;
+        gameState.scoreMultiplier = 1;
+        gameState.activePowerUps = {};
         ship.fireRate = 400;
 
-        // Update UI with loaded values
-        updateScore(0);
-        updateLives();
-        updateHealth();
-        updateLevel();
-        updatePowerUpUI();
+        UI.updateScoreUI(gameState.score);
+        UI.updateLivesUI(gameState.lives);
+        UI.updateHealthUI(gameState.health);
+        UI.updateLevelUI(gameState.level);
+        UI.updatePowerUpUI(gameState.activePowerUps);
 
-        // Clear scene entities
-        while (meteors.meteors.length > 0) {
-            scene.remove(meteors.meteors[0]);
-            meteors.meteors.shift();
-        }
-        while (lasers.lasers.length > 0) {
-            scene.remove(lasers.lasers[0]);
-            lasers.lasers.shift();
-        }
-        while (aliens.aliens.length > 0) {
-            scene.remove(aliens.aliens[0]);
-            aliens.aliens.shift();
-        }
-        while (comets.comets.length > 0) {
-            scene.remove(comets.comets[0]);
-            comets.comets.shift();
-        }
-        while (planets.planets.length > 0) {
-            scene.remove(planets.planets[0]);
-            planets.planets.shift();
-        }
-        while (powerUps.powerups.length > 0) {
-            scene.remove(powerUps.powerups[0]);
-            powerUps.powerups.shift();
-        }
+        clearSceneEntities();
 
         ship.mesh.position.set(0, 0, 0);
         ship.mesh.visible = true;
 
-        if (gameOverEl) gameOverEl.style.display = 'none';
-        if (pauseMenuEl) pauseMenuEl.style.display = 'none';
+        UI.showGameOver(false);
+        UI.togglePauseMenu(false);
     }
 
     // Show mobile controls on touch devices
-    const mobileControls = document.getElementById('mobile-controls');
-    if (mobileControls) {
-        // Check if device supports touch
+    if (UI.UIElements.mobileControls) {
         const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
         if (isTouchDevice) {
-            mobileControls.style.display = 'block';
+            UI.UIElements.mobileControls.style.display = 'block';
         }
     }
 
-    // Initialize Google AdSense after UI is visible
-    const adSlot = document.querySelector('#ad-container .adsbygoogle');
-    if (window.adsbygoogle && adSlot) {
-        try {
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
-        } catch (e) {
-            console.warn('Adsbygoogle push failed:', e);
-        }
+    // Initialize Google AdSense
+    try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {
+        console.warn('Adsbygoogle push failed:', e);
     }
 }
 
-function showHowTo() {
-    mainMenu.style.display = 'none';
-    howToScreen.style.display = 'flex';
-}
-
-function showAbout() {
-    mainMenu.style.display = 'none';
-    aboutScreen.style.display = 'flex';
-}
-
-function showCredits() {
-    mainMenu.style.display = 'none';
-    creditsScreen.style.display = 'flex';
+function quitToMenu() {
+    gameState.isPaused = true;
+    gameState.gameStarted = false;
+    UI.togglePauseMenu(false);
+    UI.UIElements.uiContainer.style.display = 'none';
+    UI.UIElements.mainMenu.style.display = 'flex';
 }
 
 function exitGame() {
-    // Replay intro video then return to main menu
-    uiContainer.style.display = 'none';
-    isPaused = true;
-    gameStarted = false;
+    UI.UIElements.uiContainer.style.display = 'none';
+    gameState.isPaused = true;
+    gameState.gameStarted = false;
 
-    // Show intro video
-    if (introContainer) introContainer.style.display = 'flex';
-    if (introVideo) {
-        introVideo.currentTime = 0;
-        introVideo.play();
+    if (UI.UIElements.introContainer) UI.UIElements.introContainer.style.display = 'flex';
+    if (UI.UIElements.introVideo) {
+        UI.UIElements.introVideo.currentTime = 0;
+        UI.UIElements.introVideo.play();
     }
 }
 
 // Event Listeners
-startBtn.addEventListener('click', () => startGame(false));
-if (loadBtn) loadBtn.addEventListener('click', () => {
-    if (loadGame()) {
-        startGame(true); // Pass true to indicate we're loading a saved game
-    }
-});
-if (saveBtn) saveBtn.addEventListener('click', () => {
-    saveGame();
-});
-if (howToBtn) howToBtn.addEventListener('click', showHowTo);
-aboutBtn.addEventListener('click', showAbout);
-creditsBtn.addEventListener('click', showCredits);
-exitBtn.addEventListener('click', exitGame);
+if (UI.UIElements.restartBtn) UI.UIElements.restartBtn.addEventListener('click', restartGame);
+if (UI.UIElements.resumeBtn) UI.UIElements.resumeBtn.addEventListener('click', togglePause);
+if (UI.UIElements.startBtn) UI.UIElements.startBtn.addEventListener('click', () => startGame(false));
+if (UI.UIElements.loadBtn) UI.UIElements.loadBtn.addEventListener('click', loadGame);
+if (UI.UIElements.saveBtn) UI.UIElements.saveBtn.addEventListener('click', saveGame);
+if (UI.UIElements.quitBtn) UI.UIElements.quitBtn.addEventListener('click', quitToMenu);
+if (UI.UIElements.exitBtn) UI.UIElements.exitBtn.addEventListener('click', exitGame);
 
-backBtns.forEach(btn => {
+if (UI.UIElements.howToBtn) UI.UIElements.howToBtn.addEventListener('click', () => {
+    UI.UIElements.mainMenu.style.display = 'none';
+    UI.UIElements.howToScreen.style.display = 'flex';
+});
+if (UI.UIElements.aboutBtn) UI.UIElements.aboutBtn.addEventListener('click', () => {
+    UI.UIElements.mainMenu.style.display = 'none';
+    UI.UIElements.aboutScreen.style.display = 'flex';
+});
+if (UI.UIElements.creditsBtn) UI.UIElements.creditsBtn.addEventListener('click', () => {
+    UI.UIElements.mainMenu.style.display = 'none';
+    UI.UIElements.creditsScreen.style.display = 'flex';
+});
+
+UI.UIElements.backBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-        aboutScreen.style.display = 'none';
-        creditsScreen.style.display = 'none';
-        if (howToScreen) howToScreen.style.display = 'none';
-        mainMenu.style.display = 'flex';
+        UI.UIElements.aboutScreen.style.display = 'none';
+        UI.UIElements.creditsScreen.style.display = 'none';
+        if (UI.UIElements.howToScreen) UI.UIElements.howToScreen.style.display = 'none';
+        UI.UIElements.mainMenu.style.display = 'flex';
     });
 });
 
 // Initialize UI
-updateLives();
-updateHealth();
-updateLevel();
-refreshHighScoreUI();
+UI.updateLivesUI(gameState.lives);
+UI.updateHealthUI(gameState.health);
+UI.updateLevelUI(gameState.level);
+UI.refreshHighScoreUI(gameState.highScore);
 
-const quitBtn = document.getElementById('quit-btn');
+// Animation Loop
+function animate() {
+    requestAnimationFrame(animate);
 
-function quitToMenu() {
-    isPaused = true;
-    gameStarted = false; // Stop the game loop logic from running if we unpause accidentally
-    if (pauseMenuEl) pauseMenuEl.style.display = 'none';
+    if (gameState.isGameOver || gameState.isPaused) return;
 
-    uiContainer.style.display = 'none';
-    mainMenu.style.display = 'flex';
-}
+    // Update game objects
+    starfield.update();
+    meteors.update();
+    planets.update();
 
-if (quitBtn) quitBtn.addEventListener('click', quitToMenu);
+    if (gameState.level >= 2) aliens.update();
+    if (gameState.level >= 3) comets.update();
 
-// Mobile shoot button
-const shootButton = document.getElementById('shoot-button');
-if (shootButton) {
-    shootButton.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        ship.shoot();
+    lasers.update();
+    ship.update(camera);
+    explosions.update();
+    powerUps.update();
+
+    applyGravity(ship, planets);
+
+    checkCollisions({
+        scene,
+        ship,
+        lasers,
+        meteors,
+        aliens,
+        comets,
+        planets,
+        powerUps,
+        explosions,
+        gameState,
+        callbacks: {
+            onScore: updateScore,
+            onDamage: (amount) => {
+                gameState.health -= amount;
+                UI.updateHealthUI(gameState.health);
+                if (gameState.health <= 0) {
+                    ship.mesh.visible = false;
+                    setTimeout(() => loseLife(), 300);
+                }
+            },
+            onPowerUp: activatePowerUp
+        }
     });
 
-    // Also support click for testing on desktop
-    shootButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        ship.shoot();
-    });
+    renderer.render(scene, camera);
 }
 
-// Start with intro video flow, then run the game loop
+// Start
 initGame();
 animate();
