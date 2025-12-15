@@ -14,9 +14,14 @@ import { gameState, resetGameState, saveGame as saveGameState, loadGame as loadG
 import * as UI from './modules/UIManager.js';
 import { initInput } from './modules/InputHandler.js';
 import { checkCollisions, applyGravity } from './modules/CollisionHandler.js';
+import { audioManager, initAudio, playSound } from './modules/AudioManager.js';
+import { PostProcessing } from './modules/PostProcessing.js';
 
 // Scene setup
 const { scene, camera, renderer } = createScene();
+
+// Post-processing for hyperspeed effects
+const postProcessing = new PostProcessing(renderer, scene, camera);
 
 // Game Objects
 const starfield = new Starfield(scene);
@@ -47,6 +52,7 @@ function checkLevelUp() {
             gameState.level = parseInt(nextLevel);
             UI.updateLevelUI(gameState.level);
             UI.showLevelUpMessage(gameState.level);
+            playSound('levelup'); // Play level up sound
             break;
         }
     }
@@ -129,6 +135,7 @@ function togglePause() {
 
 function activatePowerUp(type) {
     const now = Date.now();
+    playSound('powerup'); // Play powerup sound
 
     switch (type) {
         case 'extraLife':
@@ -172,6 +179,27 @@ function activatePowerUp(type) {
                 if (Date.now() >= gameState.activePowerUps['scoreMultiplier']) {
                     gameState.scoreMultiplier = 1;
                     delete gameState.activePowerUps['scoreMultiplier'];
+                    UI.updatePowerUpUI(gameState.activePowerUps);
+                }
+            }, 10000);
+            break;
+
+        case 'hyperspace':
+            gameState.isHyperspace = true;
+            gameState.hyperspaceEndTime = now + 10000; // 10 seconds
+            gameState.activePowerUps['hyperspace'] = gameState.hyperspaceEndTime;
+
+            // Enable hyperspeed effects
+            starfield.setHyperspeedMode(true);
+            postProcessing.updateBlurIntensity(1.0);
+
+            setTimeout(() => {
+                if (Date.now() >= gameState.activePowerUps['hyperspace']) {
+                    gameState.isHyperspace = false;
+                    // Disable hyperspeed effects
+                    starfield.setHyperspeedMode(false);
+                    postProcessing.updateBlurIntensity(0.0);
+                    delete gameState.activePowerUps['hyperspace'];
                     UI.updatePowerUpUI(gameState.activePowerUps);
                 }
             }, 10000);
@@ -226,6 +254,11 @@ function startGame(isLoadingGame = false) {
     UI.UIElements.uiContainer.style.display = 'block';
     gameState.gameStarted = true;
 
+    // Initialize audio on first game start
+    if (!audioManager.initialized) {
+        initAudio();
+    }
+
     if (!isLoadingGame) {
         restartGame();
     } else {
@@ -234,6 +267,7 @@ function startGame(isLoadingGame = false) {
         gameState.isInvincible = false;
         gameState.scoreMultiplier = 1;
         gameState.activePowerUps = {};
+        // starfield.setHyperspaceMode(false);
         ship.fireRate = 400;
 
         UI.updateScoreUI(gameState.score);
@@ -340,6 +374,7 @@ function animate() {
 
     lasers.update();
     ship.update(camera);
+    ship.updateRainbowEffect(gameState.isHyperspace);
     explosions.update();
     powerUps.update();
 
@@ -370,8 +405,36 @@ function animate() {
         }
     });
 
-    renderer.render(scene, camera);
+    // Use post-processing renderer for hyperspeed effects
+    postProcessing.render();
 }
+
+// Handle window resize (move outside animate function)
+window.addEventListener('resize', () => {
+    const aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = aspect;
+
+    // Adjust FOV for portrait mode (mobile devices)
+    if (aspect < 1) {
+        // Portrait mode - increase FOV to show more of the scene
+        camera.fov = 75 + (1 - aspect) * 20; // Gradually increase FOV for narrower screens
+    } else {
+        // Landscape mode - use default FOV
+        camera.fov = 75;
+    }
+
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Update post-processing render target
+    postProcessing.resize(window.innerWidth, window.innerHeight);
+
+    // Update ship scale for responsive sizing
+    if (ship && ship.updateScale) {
+        ship.updateScale();
+    }
+});
 
 // Start
 initGame();

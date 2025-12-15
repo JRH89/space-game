@@ -32,6 +32,11 @@ export class PowerUps {
                 color: 0xffdd00,
                 geometry: new THREE.OctahedronGeometry(0.4),
                 effect: 'scoreMultiplier'
+            },
+            hyperspace: {
+                color: 0xff00ff, // Magenta
+                geometry: new THREE.TorusKnotGeometry(0.25, 0.1, 64, 8),
+                effect: 'hyperspace'
             }
         };
     }

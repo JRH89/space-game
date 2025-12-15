@@ -9,7 +9,9 @@ export const gameState = {
     scoreMultiplier: 1,
     activePowerUps: {},
     gameStarted: false,
-    highScore: parseInt(localStorage.getItem('highScore') || '0', 10)
+    highScore: parseInt(localStorage.getItem('highScore') || '0', 10),
+    isHyperspace: false,
+    hyperspaceEndTime: 0
 };
 
 export const LEVEL_THRESHOLDS = {
@@ -29,6 +31,8 @@ export function resetGameState() {
     gameState.isInvincible = false;
     gameState.scoreMultiplier = 1;
     gameState.activePowerUps = {};
+    gameState.isHyperspace = false;
+    gameState.hyperspaceEndTime = 0;
     // gameStarted remains true if we are just restarting
 }
 

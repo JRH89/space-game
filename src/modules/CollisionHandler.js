@@ -139,13 +139,21 @@ export function checkCollisions({
         const meteorBox = new THREE.Box3().setFromObject(meteor);
         meteorBox.expandByScalar(-0.3); // Tighten collision
 
-        if (shipBox.intersectsBox(meteorBox) && !gameState.isInvincible) {
-            explosions.explode(shipMesh.position);
-            scene.remove(meteor);
-            meteorList.splice(i, 1);
+        if (shipBox.intersectsBox(meteorBox)) {
+            if (gameState.isHyperspace) {
+                // God Mode: Destroy meteor
+                explosions.explode(meteor.position);
+                scene.remove(meteor);
+                meteorList.splice(i, 1);
+                callbacks.onScore(200); // Bonus points for ramming
+            } else if (!gameState.isInvincible) {
+                explosions.explode(shipMesh.position);
+                scene.remove(meteor);
+                meteorList.splice(i, 1);
 
-            // Reduce health
-            callbacks.onDamage(25);
+                // Reduce health
+                callbacks.onDamage(25);
+            }
         }
     }
 
@@ -155,13 +163,21 @@ export function checkCollisions({
         const alienBox = new THREE.Box3().setFromObject(alien);
         alienBox.expandByScalar(-0.5); // Tighten collision
 
-        if (shipBox.intersectsBox(alienBox) && !gameState.isInvincible) {
-            explosions.explode(shipMesh.position);
-            scene.remove(alien);
-            alienList.splice(i, 1);
+        if (shipBox.intersectsBox(alienBox)) {
+            if (gameState.isHyperspace) {
+                // God Mode: Destroy alien
+                explosions.explode(alien.position);
+                scene.remove(alien);
+                alienList.splice(i, 1);
+                callbacks.onScore(400); // Bonus points for ramming
+            } else if (!gameState.isInvincible) {
+                explosions.explode(shipMesh.position);
+                scene.remove(alien);
+                alienList.splice(i, 1);
 
-            // Reduce health
-            callbacks.onDamage(30);
+                // Reduce health
+                callbacks.onDamage(30);
+            }
         }
     }
 
@@ -171,13 +187,21 @@ export function checkCollisions({
         const cometBox = new THREE.Box3().setFromObject(comet);
         cometBox.expandByScalar(-0.3); // Tighten collision
 
-        if (shipBox.intersectsBox(cometBox) && !gameState.isInvincible) {
-            explosions.explode(shipMesh.position);
-            scene.remove(comet);
-            cometList.splice(i, 1);
+        if (shipBox.intersectsBox(cometBox)) {
+            if (gameState.isHyperspace) {
+                // God Mode: Destroy comet
+                explosions.explode(comet.position);
+                scene.remove(comet);
+                cometList.splice(i, 1);
+                callbacks.onScore(600); // Bonus points for ramming
+            } else if (!gameState.isInvincible) {
+                explosions.explode(shipMesh.position);
+                scene.remove(comet);
+                cometList.splice(i, 1);
 
-            // Reduce health
-            callbacks.onDamage(40);
+                // Reduce health
+                callbacks.onDamage(40);
+            }
         }
     }
 
@@ -190,10 +214,12 @@ export function checkCollisions({
 
         // Reduced collision radius - gives more time to destroy moon before crash
         if (shipMesh.position.distanceTo(planetWorldPos) < 3.2) { // Smaller = more time
-            explosions.explode(shipMesh.position);
+            if (!gameState.isHyperspace) {
+                explosions.explode(shipMesh.position);
 
-            // Reduce health massively
-            callbacks.onDamage(1000); // Instant kill essentially
+                // Reduce health massively
+                callbacks.onDamage(1000); // Instant kill essentially
+            }
         }
     }
 

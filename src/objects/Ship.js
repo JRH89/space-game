@@ -3,6 +3,7 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import fighterMtl from '../assets/Fighter_02_Obj/Fighter_02.mtl?url';
 import fighterObj from '../assets/Fighter_02_Obj/Fighter_02.obj?url';
+import { playSound } from '../modules/AudioManager.js';
 
 export class Ship {
     constructor(scene, lasers) {
@@ -68,6 +69,13 @@ export class Ship {
         this.touchCurrentPos = { x: 0, y: 0 };
         this.joystickBase = null;
         this.joystickKnob = null;
+
+        // Gamepad controls
+        this.gamepadInput = {
+            x: 0,
+            y: 0,
+            pausePressed: false
+        };
 
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
@@ -165,6 +173,7 @@ export class Ship {
         if (this.lasers && now - this.lastShotTime > this.fireRate) {
             this.lasers.shoot(this.mesh.position);
             this.lastShotTime = now;
+            playSound('laser'); // Play laser sound
         }
     }
 
@@ -172,8 +181,22 @@ export class Ship {
         // Idle animation
         this.mesh.rotation.z = 0; // Reset roll for banking effect later
 
+        // Gamepad controls movement
+        if (this.gamepadInput.x !== 0 || this.gamepadInput.y !== 0) {
+            const maxSpeed = 0.12; // Same max speed as touch controls
+            this.mesh.position.x += this.gamepadInput.x * maxSpeed;
+            this.mesh.position.y += this.gamepadInput.y * maxSpeed;
+
+            // Banking effect for gamepad
+            if (Math.abs(this.gamepadInput.x) > 0.1) {
+                this.mesh.rotation.z = -this.gamepadInput.x * 0.5;
+            }
+            
+            // Debug logging
+            console.log('Ship moving with gamepad:', this.gamepadInput);
+        }
         // Touch controls movement
-        if (this.touchActive) {
+        else if (this.touchActive) {
             const maxSpeed = 0.12; // Consistent max speed regardless of screen size
             const range = this.maxJoystickRange || 40;
 
@@ -221,6 +244,54 @@ export class Ship {
             // Fallback boundaries if camera not provided - also allow partial off-screen
             this.mesh.position.x = Math.max(-9, Math.min(9, this.mesh.position.x));
             this.mesh.position.y = Math.max(-5, Math.min(5, this.mesh.position.y));
+        }
+    }
+    updateRainbowEffect(isHyperspace) {
+        if (!this.modelObject) return;
+
+        if (isHyperspace) {
+            const time = Date.now() * 0.005;
+            const color = new THREE.Color().setHSL(Math.sin(time), 1.0, 0.5);
+
+            this.modelObject.traverse((child) => {
+                if (child.isMesh) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => {
+                            mat.emissive = color;
+                            mat.emissiveIntensity = 0.8;
+                        });
+                    } else {
+                        child.material.emissive = color;
+                        child.material.emissiveIntensity = 0.8;
+                    }
+                }
+            });
+
+            // Also update the ship light
+            if (this.shipLight) {
+                this.shipLight.color = color;
+                this.shipLight.intensity = 4;
+            }
+        } else {
+            // Reset to default
+            this.modelObject.traverse((child) => {
+                if (child.isMesh) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => {
+                            mat.emissive = mat.color.clone();
+                            mat.emissiveIntensity = 0.1;
+                        });
+                    } else {
+                        child.material.emissive = child.material.color.clone();
+                        child.material.emissiveIntensity = 0.1;
+                    }
+                }
+            });
+
+            if (this.shipLight) {
+                this.shipLight.color.setHex(0xffffff);
+                this.shipLight.intensity = 2;
+            }
         }
     }
 }

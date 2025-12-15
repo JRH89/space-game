@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { playSound } from '../modules/AudioManager.js';
 
 export class Explosions {
     constructor(scene) {
@@ -11,6 +12,8 @@ export class Explosions {
     }
 
     explode(position) {
+        playSound('explosion'); // Play explosion sound
+        
         const particleCount = 10;
         for (let i = 0; i < particleCount; i++) {
             const particle = new THREE.Mesh(this.geometry, this.material.clone()); // Clone material to fade individually if needed
