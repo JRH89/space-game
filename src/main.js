@@ -14,6 +14,7 @@ import { gameState, resetGameState, saveGame as saveGameState, loadGame as loadG
 import * as UI from './modules/UIManager.js';
 import { initInput } from './modules/InputHandler.js';
 import { checkCollisions, applyGravity } from './modules/CollisionHandler.js';
+import { audioManager, initAudio, playSound } from './modules/AudioManager.js';
 
 // Scene setup
 const { scene, camera, renderer } = createScene();
@@ -47,6 +48,7 @@ function checkLevelUp() {
             gameState.level = parseInt(nextLevel);
             UI.updateLevelUI(gameState.level);
             UI.showLevelUpMessage(gameState.level);
+            playSound('levelup'); // Play level up sound
             break;
         }
     }
@@ -129,6 +131,7 @@ function togglePause() {
 
 function activatePowerUp(type) {
     const now = Date.now();
+    playSound('powerup'); // Play powerup sound
 
     switch (type) {
         case 'extraLife':
@@ -243,6 +246,11 @@ function startGame(isLoadingGame = false) {
     UI.UIElements.mainMenu.style.display = 'none';
     UI.UIElements.uiContainer.style.display = 'block';
     gameState.gameStarted = true;
+
+    // Initialize audio on first game start
+    if (!audioManager.initialized) {
+        initAudio();
+    }
 
     if (!isLoadingGame) {
         restartGame();
