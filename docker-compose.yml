@@ -1,0 +1,9 @@
+services:
+  space-game:
+    build: .
+    ports:
+      - "9821:5173"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    container_name: space-game
